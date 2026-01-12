@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Emergency Tutorial Fix</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: #f0f0f0; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        button { padding: 15px 25px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        .fix-btn { background: #28a745; }
+        .fix-btn:hover { background: #1e7e34; }
+        .reset-btn { background: #dc3545; }
+        .reset-btn:hover { background: #c82333; }
+        .status { padding: 15px; margin: 15px 0; background: #f8f9fa; border-radius: 5px; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 5px; font-size: 14px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Emergency Tutorial System Fix</h1>
+        <p>This tool will force the tutorial system to show correctly.</p>
+        
+        <div class="status" id="status">
+            Click "Fix Tutorial System" to diagnose and fix the tutorial routing issue.
+        </div>
+        
+        <div>
+            <button onclick="fixTutorialSystem()" class="fix-btn">Fix Tutorial System</button>
+            <button onclick="resetCompletely()" class="reset-btn">Complete Reset</button>
+            <button onclick="checkCurrentState()">Check Current State</button>
+            <button onclick="goToApp()">Go to App</button>
+        </div>
+        
+        <div>
+            <h3>Console Output:</h3>
+            <pre id="output"></pre>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent += `[${timestamp}] ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(message) {
+            document.getElementById('status').innerHTML = message;
+        }
+        
+        function checkCurrentState() {
+            log('=== CHECKING CURRENT STATE ===');
+            
+            const state = {
+                hasVisitedWIMP: localStorage.getItem('hasVisitedWIMP'),
+                tutorialCompleted: localStorage.getItem('tutorialCompleted'),
+                hasSeenWelcome: localStorage.getItem('hasSeenWelcome'),
+                authToken: localStorage.getItem('authToken'),
+                user: localStorage.getItem('user'),
+                tutorial_started: localStorage.getItem('tutorial_started'),
+                contextual_tutorial_completed: localStorage.getItem('contextual_tutorial_completed')
+            };
+            
+            Object.entries(state).forEach(([key, value]) => {
+                log(`${key}: ${value || 'null'}`);
+            });
+            
+            // Determine expected flow
+            if (!state.hasVisitedWIMP) {
+                log('EXPECTED: Should show Welcome screen');
+                updateStatus('Expected: Welcome screen should show');
+            } else if (!state.tutorialCompleted) {
+                log('EXPECTED: Should show Tutorial screen');
+                updateStatus('Expected: Tutorial screen should show');
+            } else {
+                log('EXPECTED: Should show Auth screen');
+                updateStatus('Expected: Auth screen should show');
+            }
+        }
+        
+        function fixTutorialSystem() {
+            log('=== FIXING TUTORIAL SYSTEM ===');
+            updateStatus('Fixing tutorial system...');
+            
+            // First check current state
+            checkCurrentState();
+            
+            // Clear all tutorial/auth state to force fresh flow
+            const keysToRemove = [
+                'hasVisitedWIMP',
+                'tutorialCompleted', 
+                'hasSeenWelcome',
+                'authToken',
+                'user',
+                'tutorial_started',
+                'tutorial_completed',
+                'contextual_tutorial_completed'
+            ];
+            
+            log('Clearing all tutorial state...');
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+                log(`  Removed: ${key}`);
+            });
+            
+            // Force tutorial mode by setting the correct state
+            log('Setting fresh tutorial state...');
+            // Don't set hasVisitedWIMP - this will force welcome screen
+            // Then user can progress to tutorial naturally
+            
+            log('Tutorial system should now work correctly');
+            updateStatus('✅ Tutorial system fixed! Redirecting to app...');
+            
+            setTimeout(() => {
+                window.location.href = '/app';
+            }, 2000);
+        }
+        
+        function resetCompletely() {
+            log('=== COMPLETE RESET ===');
+            updateStatus('Performing complete reset...');
+            
+            // Clear ALL localStorage
+            localStorage.clear();
+            log('Cleared all localStorage data');
+            
+            // Clear session storage too
+            sessionStorage.clear();
+            log('Cleared all sessionStorage data');
+            
+            updateStatus('✅ Complete reset done! Redirecting to app...');
+            
+            setTimeout(() => {
+                window.location.href = '/app';
+            }, 2000);
+        }
+        
+        function goToApp() {
+            window.location.href = '/app';
+        }
+        
+        // Initialize
+        log('Emergency Tutorial Fix tool loaded');
+        checkCurrentState();
+    </script>
+</body>
+</html>

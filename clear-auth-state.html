@@ -1,0 +1,23 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head><title>Clear Auth State</title></head>
+    <body>
+      <h1>Clearing Authentication State</h1>
+      <script>
+    // Clear all localStorage and sessionStorage
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Verify cleared
+    console.log('✅ State cleared:', {
+      authToken: localStorage.getItem('authToken'),
+      user: localStorage.getItem('user'),
+      tutorialCompleted: localStorage.getItem('tutorialCompleted'),
+      hasVisitedWIMP: localStorage.getItem('hasVisitedWIMP')
+    });
+  </script>
+      <p>State cleared. Check console and <a href="/app">reload app</a></p>
+    </body>
+    </html>
+  

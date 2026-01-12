@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Update Token</title>
+</head>
+<body>
+    <h1>Update Authentication Token</h1>
+    <button onclick="updateToken()">Update Token & Test AI Advisor</button>
+    <div id="result"></div>
+    
+    <script>
+        async function updateToken() {
+            // Clear old token
+            localStorage.removeItem('authToken');
+            
+            // Set fresh token
+            const freshToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NjMsInVzZXJuYW1lIjoicm9zczEiLCJlbWFpbCI6InJvc3MxQGdtYWlsLmNvbSIsIm5hbWUiOiJSb3NzIiwidXNlcklkIjoiNjMiLCJpYXQiOjE3NTU4MjI2NDgsImV4cCI6MTc1NTkwOTA0OH0.wqB79SuimNXuVTF8jg483V-H0v6KE9cMDbDC5H-lQLY';
+            localStorage.setItem('authToken', freshToken);
+            
+            document.getElementById('result').innerHTML = `
+                <p style="color: green;">Fresh token updated!</p>
+                <p>Token length: ${freshToken.length} characters</p>
+                <p>Testing AI Advisor...</p>
+            `;
+            
+            // Test AI advisor with fresh token
+            try {
+                const response = await fetch('/api/shopping-items/ai-advisor', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${freshToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('result').innerHTML += `
+                    <p><strong>AI Advisor Test Result:</strong></p>
+                    <p>Status: ${response.status}</p>
+                    <p>Success: ${data.success}</p>
+                    <p>Message: ${data.message || 'No message'}</p>
+                    <p>Response: <pre>${JSON.stringify(data, null, 2)}</pre></p>
+                `;
+                
+                if (data.success) {
+                    document.getElementById('result').innerHTML += `<p style="color: green; font-weight: bold;">✅ AI Advisor working! You can now use the shopping list.</p>`;
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML += `<p style="color: red;">Error testing AI advisor: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

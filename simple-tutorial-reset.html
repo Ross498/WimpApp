@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tutorial Reset Tool</title>
+    <style>
+        body { 
+            font-family: Arial; 
+            margin: 40px; 
+            background: #f0f0f0; 
+            text-align: center;
+        }
+        .container { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+        }
+        button { 
+            padding: 15px 25px; 
+            margin: 10px; 
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 16px; 
+        }
+        button:hover { background: #1e7e34; }
+        .status { 
+            padding: 15px; 
+            margin: 15px 0; 
+            background: #f8f9fa; 
+            border-radius: 5px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Tutorial Reset Tool</h1>
+        <p>Click the button below to reset the tutorial system and see the tutorial flow.</p>
+        
+        <div class="status" id="status">
+            Ready to reset tutorial state
+        </div>
+        
+        <button onclick="resetTutorial()">Reset Tutorial & Go to App</button>
+        
+        <div style="margin-top: 20px;">
+            <small>This will clear localStorage and reload the app</small>
+        </div>
+    </div>
+
+    <script>
+        function resetTutorial() {
+            document.getElementById('status').innerHTML = 'Resetting tutorial state...';
+            
+            // Clear ALL localStorage to ensure clean state
+            localStorage.clear();
+            
+            // Set up fresh tutorial state
+            localStorage.setItem('hasVisitedWIMP', 'true');
+            // DO NOT set tutorialCompleted - leave it null/undefined
+            
+            document.getElementById('status').innerHTML = '✅ Tutorial reset complete! Redirecting...';
+            
+            setTimeout(() => {
+                window.location.href = '/app';
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

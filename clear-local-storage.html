@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Local Storage</title>
+</head>
+<body>
+    <h2>Shopping List Debug Tool</h2>
+    <button onclick="clearStorage()">Clear Local Storage & Force Token Refresh</button>
+    <button onclick="testAPI()">Test Shopping List API</button>
+    <button onclick="testAuthToken()">Test Auth Token</button>
+    
+    <div id="output" style="margin-top: 20px; background: #f0f0f0; padding: 10px; font-family: monospace; white-space: pre-wrap;"></div>
+
+    <script>
+        function clearStorage() {
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Force set the correct token
+            const correctToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NjMsInVzZXJuYW1lIjoicm9zczEiLCJlbWFpbCI6InJvc3MxQGdtYWlsLmNvbSIsIm5hbWUiOiJSb3NzIiwidXNlcklkIjoiNjMiLCJpYXQiOjE3NTU3OTQxNzUsImV4cCI6MTc1NTg4MDU3NX0.cxUO_Tt4OX37EXFR9_J6sN91jNxEYlsR2ys_Bk50Ym0';
+            localStorage.setItem('authToken', correctToken);
+            
+            document.getElementById('output').textContent = 'Storage cleared and correct token set!\n';
+            
+            // Force cache clear
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                    document.getElementById('output').textContent += 'Browser cache cleared!\n';
+                }).catch(err => {
+                    document.getElementById('output').textContent += 'Cache clear error: ' + err + '\n';
+                });
+            }
+        }
+
+        async function testAPI() {
+            const token = localStorage.getItem('authToken');
+            document.getElementById('output').textContent = 'Testing API with token: ' + (token ? token.substring(0, 50) + '...' : 'NO TOKEN') + '\n\n';
+            
+            try {
+                // Test shopping lists
+                const response = await fetch('/api/shopping-lists', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                const data = await response.json();
+                document.getElementById('output').textContent += 'Shopping Lists: ' + JSON.stringify(data, null, 2) + '\n\n';
+                
+                // Test shopping list items
+                if (data.length > 0) {
+                    const itemsResponse = await fetch(`/api/shopping-lists/${data[0].id}/items`, {
+                        headers: {
+                            'Authorization': 'Bearer ' + token
+                        }
+                    });
+                    const itemsData = await itemsResponse.json();
+                    document.getElementById('output').textContent += 'Shopping List Items: ' + JSON.stringify(itemsData, null, 2) + '\n';
+                }
+            } catch (error) {
+                document.getElementById('output').textContent += 'API Error: ' + error.message + '\n';
+            }
+        }
+
+        async function testAuthToken() {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                try {
+                    const decoded = JSON.parse(atob(token.split('.')[1]));
+                    document.getElementById('output').textContent = 'Token Data: ' + JSON.stringify(decoded, null, 2) + '\n';
+                    document.getElementById('output').textContent += 'Expires: ' + new Date(decoded.exp * 1000).toLocaleString() + '\n';
+                    document.getElementById('output').textContent += 'Is Valid: ' + (decoded.exp * 1000 > Date.now()) + '\n';
+                } catch (e) {
+                    document.getElementById('output').textContent = 'Token decode error: ' + e.message + '\n';
+                }
+            } else {
+                document.getElementById('output').textContent = 'No token found!\n';
+            }
+        }
+    </script>
+</body>
+</html>

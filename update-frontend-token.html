@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix Shopping List Token</title>
+</head>
+<body>
+    <h2>Shopping List Token Fix</h2>
+    <button onclick="updateToken()">Update Token & Test Shopping List</button>
+    <div id="results"></div>
+    
+    <script>
+        async function updateToken() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>🔄 Updating authentication token...</p>';
+            
+            // Use the tested working token
+            const freshToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NTcsInVzZXJuYW1lIjoicm9zcyIsImVtYWlsIjoicm9zc0BnbWFpbC5jb20iLCJuYW1lIjoiUm9zcyIsInVzZXJJZCI6IjU3IiwiaWF0IjoxNzU1NDUzMjAzLCJleHAiOjE3NTU1Mzk2MDN9.YIlWIQNVb2einwCELH2Ktuj-5nyb10UhjLhGvmY-6FQ';
+            
+            // Update both localStorage and cookies
+            localStorage.setItem('authToken', freshToken);
+            document.cookie = `authToken=${freshToken}; path=/`;
+            
+            results.innerHTML += '<p>✅ Token updated in localStorage and cookies</p>';
+            
+            // Test shopping list fetch
+            try {
+                results.innerHTML += '<p>🛒 Testing shopping lists fetch...</p>';
+                
+                const listsResponse = await fetch('/api/shopping-lists', {
+                    headers: {
+                        'Authorization': `Bearer ${freshToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                if (!listsResponse.ok) {
+                    const errorText = await listsResponse.text();
+                    results.innerHTML += `<p>❌ Lists fetch failed: ${listsResponse.status} - ${errorText}</p>`;
+                    return;
+                }
+                
+                const lists = await listsResponse.json();
+                results.innerHTML += `<p>✅ Found ${lists.length} shopping lists</p>`;
+                
+                if (lists.length > 0) {
+                    const listId = lists[0].id;
+                    
+                    results.innerHTML += `<p>🛒 Testing items for list ${listId}...</p>`;
+                    
+                    const itemsResponse = await fetch(`/api/shopping-lists/${listId}/items`, {
+                        headers: {
+                            'Authorization': `Bearer ${freshToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    if (!itemsResponse.ok) {
+                        const errorText = await itemsResponse.text();
+                        results.innerHTML += `<p>❌ Items fetch failed: ${itemsResponse.status} - ${errorText}</p>`;
+                        return;
+                    }
+                    
+                    const items = await itemsResponse.json();
+                    results.innerHTML += `<p>✅ Found ${items.length} shopping list items!</p>`;
+                    results.innerHTML += `<p>Items: ${JSON.stringify(items, null, 2)}</p>`;
+                    
+                    results.innerHTML += '<p>🎉 Shopping list is now working! Please reload the shopping list page.</p>';
+                    
+                    // Also test ingredients API
+                    results.innerHTML += '<p>🧪 Testing ingredients API...</p>';
+                    const ingredientsResponse = await fetch('/api/ingredients', {
+                        headers: {
+                            'Authorization': `Bearer ${freshToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    if (ingredientsResponse.ok) {
+                        const ingredientsData = await ingredientsResponse.json();
+                        results.innerHTML += `<p>✅ Ingredients API working! Found ${ingredientsData.ingredients?.length || 0} ingredients</p>`;
+                        results.innerHTML += '<p>🎉 Both Shopping List and Ingredients screens should now work!</p>';
+                    } else {
+                        results.innerHTML += '<p>❌ Ingredients API still failing</p>';
+                    }
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

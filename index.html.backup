@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WIMP Kitchen Companion</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1E293B">
+</head>
+<body>
+  <div id="root">
+    <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: Arial, sans-serif;">
+      <div style="text-align: center;">
+        <h1>WIMP Kitchen Companion</h1>
+        <p>Loading application...</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

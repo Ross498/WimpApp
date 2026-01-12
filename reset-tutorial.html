@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reset WIMP Tutorial</title>
+</head>
+<body>
+    <h1>Resetting WIMP Tutorial Progress...</h1>
+    <p>This will clear all local data and restart the tutorial.</p>
+    <script>
+        // Clear all localStorage items related to WIMP
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('tutorialCompleted');
+        localStorage.removeItem('hasVisitedWIMP');
+        
+        // Clear any other cached data
+        localStorage.clear();
+        
+        // Also clear any cookies
+        document.cookie.split(";").forEach(function(c) { 
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        });
+        
+        console.log('All data cleared - redirecting to fresh app');
+        
+        // Redirect to the app
+        setTimeout(() => {
+            window.location.href = '/app';
+        }, 1000);
+    </script>
+</body>
+</html>
