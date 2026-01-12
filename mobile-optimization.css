@@ -1,0 +1,93 @@
+
+/* Mobile-First Responsive Design Enhancements */
+
+/* Touch-friendly interactions */
+.mobile-optimized {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile-specific form enhancements */
+@media (max-width: 768px) {
+  /* Form inputs with proper mobile keyboards */
+  input[type="email"] {
+    autocomplete: email;
+    inputmode: email;
+  }
+  
+  input[type="tel"] {
+    autocomplete: tel;
+    inputmode: tel;
+  }
+  
+  input[type="number"] {
+    inputmode: numeric;
+  }
+  
+  input[type="search"] {
+    inputmode: search;
+  }
+  
+  /* Mobile-friendly dropdowns */
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+  }
+  
+  /* Card layouts responsive to mobile */
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .grid.mobile-2-col {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  /* Navigation spacing for mobile */
+  .nav-items {
+    gap: 8px;
+  }
+  
+  /* Modal positioning for mobile */
+  .modal-overlay {
+    padding: var(--safe-area-inset-top) var(--safe-area-inset-right) var(--safe-area-inset-bottom) var(--safe-area-inset-left);
+  }
+}
+
+/* Landscape mobile optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+  .bottom-navigation {
+    padding-bottom: 8px;
+  }
+  
+  .floating-action-button {
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Very small screens (iPhone SE, etc.) */
+@media (max-width: 375px) {
+  :root {
+    --mobile-padding: 8px;
+  }
+  
+  .container {
+    padding: var(--mobile-padding);
+  }
+  
+  .text-responsive {
+    font-size: 14px;
+  }
+}
+
+/* Large mobile screens (iPhone Pro Max, etc.) */
+@media (min-width: 414px) and (max-width: 768px) {
+  .grid.mobile-enhanced {
+    grid-template-columns: 1fr 1fr;
+  }
+}
