@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WIMP Landing vs App Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1e293b; color: white; }
+        .section { background: #374151; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        button { padding: 15px 30px; margin: 10px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #2563eb; }
+        .explanation { background: #fef3c7; color: #92400e; padding: 15px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔍 WIMP: Landing Page vs Authenticated App Test</h1>
+    
+    <div class="explanation">
+        <strong>The Issue:</strong> You're seeing the React app's <strong>landing page</strong> (authentication screen), not a broken app. 
+        This happens because:
+        <ul>
+            <li>Preview: You're logged in → Shows authenticated app</li>
+            <li>External: No login session → Shows landing page</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>🏠 Test Landing Page (What you see externally)</h2>
+        <p>This shows the React authentication screen with Chef profiles</p>
+        <button onclick="window.open('/', '_blank')">Open Landing Page</button>
+    </div>
+    
+    <div class="section">
+        <h2>🚀 Test Direct App Access</h2>
+        <p>This should show the same landing page (because not authenticated)</p>
+        <button onclick="window.open('/app', '_blank')">Open App Route</button>
+    </div>
+    
+    <div class="section">
+        <h2>🔐 Test with Authentication</h2>
+        <p>Login first, then test PWA functionality</p>
+        <button onclick="loginAndTest()">Login → Test PWA</button>
+    </div>
+    
+    <div class="section">
+        <h2>📱 PWA Test (Should work after login)</h2>
+        <button onclick="window.open('/app?pwa=true', '_blank')">Test PWA Launch</button>
+    </div>
+    
+    <div class="section">
+        <h2>✅ Expected Behavior</h2>
+        <ul>
+            <li><strong>Before Login:</strong> Beautiful landing page with chef profiles (THIS IS CORRECT)</li>
+            <li><strong>After Login:</strong> Full authenticated WIMP app with meals, ingredients, etc.</li>
+            <li><strong>PWA Launch:</strong> Should remember login and go directly to authenticated app</li>
+        </ul>
+    </div>
+
+    <script>
+        function loginAndTest() {
+            // Open login page
+            const loginWindow = window.open('/', '_blank');
+            alert('1. Login in the new window\n2. Then come back and test PWA functionality\n3. The PWA should remember your login');
+        }
+    </script>
+</body>
+</html>

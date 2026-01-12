@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Complete Authentication Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
+        .log { padding: 8px; margin: 3px 0; border-radius: 4px; font-family: monospace; font-size: 13px; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        .error { background: #ffebee; color: #c62828; }
+        .warning { background: #fff3e0; color: #ef6c00; }
+        .info { background: #e3f2fd; color: #1976d2; }
+        button { padding: 12px 24px; margin: 10px 5px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #1565c0; }
+        .status { background: #f5f5f5; padding: 15px; margin: 15px 0; border-left: 4px solid #2196f3; }
+        h1 { color: #1976d2; margin-bottom: 30px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>🔐 Complete Authentication Fix & Test</h1>
+    
+    <div class="status">
+        <strong>Current Status:</strong> <span id="currentStatus">Unknown</span><br>
+        <strong>Token:</strong> <span id="tokenStatus">Checking...</span>
+    </div>
+    
+    <div class="section">
+        <h3>Step 1: Clear All Old Tokens & Get Fresh Credentials</h3>
+        <button onclick="clearAllAndLogin()">🧹 Clear Everything & Login Fresh</button>
+    </div>
+    
+    <div class="section">
+        <h3>Step 2: Test All APIs</h3>
+        <button onclick="testAllAPIs()">🧪 Test All API Endpoints</button>
+    </div>
+    
+    <div class="section">
+        <h3>Step 3: Simulate React App Usage</h3>
+        <button onclick="simulateReactApp()">⚛️ Test Like Real React App</button>
+    </div>
+    
+    <div id="logs"></div>
+    
+    <script>
+    let logCount = 0;
+    
+    function log(message, type = 'info') {
+        const div = document.createElement('div');
+        div.className = `log ${type}`;
+        div.innerHTML = `[${++logCount}] ${new Date().toLocaleTimeString()}: ${message}`;
+        document.getElementById('logs').appendChild(div);
+        updateStatus();
+    }
+    
+    function updateStatus() {
+        const token = localStorage.getItem('authToken');
+        const statusEl = document.getElementById('currentStatus');
+        const tokenEl = document.getElementById('tokenStatus');
+        
+        if (!token) {
+            statusEl.innerHTML = '<span style="color: red;">No Token</span>';
+            tokenEl.innerHTML = '<span style="color: red;">Missing</span>';
+        } else {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const now = Math.floor(Date.now() / 1000);
+                const isExpired = now > payload.exp;
+                
+                statusEl.innerHTML = isExpired ? 
+                    '<span style="color: red;">Expired Token</span>' : 
+                    '<span style="color: green;">Valid Token</span>';
+                
+                tokenEl.innerHTML = `<span style="color: ${isExpired ? 'red' : 'green'};">
+                    ${isExpired ? 'EXPIRED' : 'VALID'} - Expires ${new Date(payload.exp * 1000).toLocaleString()}
+                </span>`;
+            } catch (e) {
+                statusEl.innerHTML = '<span style="color: orange;">Invalid Token Format</span>';
+                tokenEl.innerHTML = '<span style="color: orange;">Malformed</span>';
+            }
+        }
+    }
+    
+    async function clearAllAndLogin() {
+        document.getElementById('logs').innerHTML = '';
+        logCount = 0;
+        
+        log('=== COMPLETE AUTHENTICATION CLEANUP & FRESH LOGIN ===', 'info');
+        
+        // Step 1: Nuclear storage clear
+        log('Step 1: Nuclear storage cleanup...', 'info');
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Clear any cookies (just in case)
+        document.cookie.split(";").forEach(function(c) {
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+        
+        log('✅ All storage cleared (localStorage, sessionStorage, cookies)', 'success');
+        
+        // Step 2: Get fresh token
+        log('Step 2: Getting completely fresh authentication token...', 'info');
+        
+        try {
+            const loginResponse = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    email: 'test@newwimp.app', 
+                    password: 'password123' 
+                })
+            });
+            
+            const loginData = await loginResponse.json();
+            
+            if (loginData.success && loginData.token) {
+                // Store the fresh token
+                localStorage.setItem('authToken', loginData.token);
+                localStorage.setItem('user', JSON.stringify(loginData.user));
+                localStorage.setItem('isAuthenticated', 'true');
+                
+                log(`✅ Fresh login successful for: ${loginData.user.email}`, 'success');
+                log(`✅ New token stored - valid for 7 days`, 'success');
+                
+                // Decode and verify new token
+                const payload = JSON.parse(atob(loginData.token.split('.')[1]));
+                const now = Math.floor(Date.now() / 1000);
+                const hoursValid = Math.floor((payload.exp - now) / 3600);
+                
+                log(`🔐 Token details: Expires in ${hoursValid} hours (${new Date(payload.exp * 1000).toLocaleString()})`, 'info');
+                
+            } else {
+                log('❌ Fresh login failed', 'error');
+                return false;
+            }
+            
+        } catch (error) {
+            log(`❌ Login error: ${error.message}`, 'error');
+            return false;
+        }
+        
+        log('🎉 AUTHENTICATION CLEANUP & FRESH LOGIN COMPLETE', 'success');
+        return true;
+    }
+    
+    async function testAllAPIs() {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            log('❌ No token found. Run "Clear & Login" first.', 'error');
+            return;
+        }
+        
+        log('=== COMPREHENSIVE API TESTING ===', 'info');
+        
+        const testEndpoints = [
+            { name: 'Auth Me', url: '/api/auth/me' },
+            { name: 'Financial Overview', url: '/api/financial/overview' },
+            { name: 'Financial Budget', url: '/api/financial/budget' },
+            { name: 'Subscription Status', url: '/api/subscription/status' },
+            { name: 'Shopping List', url: '/api/shopping' },
+            { name: 'Ingredients', url: '/api/ingredients' },
+            { name: 'Meals Unified', url: '/api/meals/unified' },
+            { name: 'Profile', url: '/api/profile' }
+        ];
+        
+        let workingAPIs = 0;
+        let failingAPIs = 0;
+        
+        for (const endpoint of testEndpoints) {
+            const tokenBefore = localStorage.getItem('authToken');
+            
+            try {
+                log(`Testing ${endpoint.name}...`, 'info');
+                
+                const response = await fetch(endpoint.url, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    credentials: 'include'
+                });
+                
+                const tokenAfter = localStorage.getItem('authToken');
+                
+                if (tokenBefore !== tokenAfter) {
+                    log(`🚨 ${endpoint.name}: TOKEN WAS MODIFIED!`, 'error');
+                    return;
+                }
+                
+                if (response.ok) {
+                    workingAPIs++;
+                    const data = await response.json();
+                    log(`✅ ${endpoint.name}: ${response.status} - ${JSON.stringify(data).substring(0, 100)}...`, 'success');
+                } else {
+                    failingAPIs++;
+                    const errorText = await response.text();
+                    log(`❌ ${endpoint.name}: ${response.status} - ${errorText.substring(0, 100)}...`, 'error');
+                }
+                
+            } catch (error) {
+                failingAPIs++;
+                log(`❌ ${endpoint.name}: Network error - ${error.message}`, 'error');
+            }
+        }
+        
+        log(`=== API TEST SUMMARY ===`, 'info');
+        log(`✅ Working APIs: ${workingAPIs}`, 'success');
+        log(`❌ Failing APIs: ${failingAPIs}`, failingAPIs > 0 ? 'error' : 'success');
+        
+        if (workingAPIs === testEndpoints.length) {
+            log('🎉 ALL APIS WORKING! Authentication is fully fixed!', 'success');
+        }
+    }
+    
+    async function simulateReactApp() {
+        log('=== SIMULATING REAL REACT APP USAGE ===', 'info');
+        
+        // Simulate multiple components making concurrent API calls
+        log('Simulating multiple React components making API calls...', 'info');
+        
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            log('❌ No token for React simulation', 'error');
+            return;
+        }
+        
+        // Test concurrent API calls (like React components mounting)
+        const concurrentCalls = [
+            fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch('/api/ingredients', { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch('/api/meals/unified', { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch('/api/financial/overview', { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch('/api/subscription/status', { headers: { 'Authorization': `Bearer ${token}` } })
+        ];
+        
+        try {
+            const responses = await Promise.all(concurrentCalls);
+            let successCount = 0;
+            
+            for (let i = 0; i < responses.length; i++) {
+                if (responses[i].ok) {
+                    successCount++;
+                }
+            }
+            
+            log(`🔄 Concurrent API calls: ${successCount}/${responses.length} succeeded`, 
+                successCount === responses.length ? 'success' : 'warning');
+            
+            // Check if token is still preserved
+            const finalToken = localStorage.getItem('authToken');
+            if (finalToken === token) {
+                log('✅ Token preserved through concurrent calls', 'success');
+            } else {
+                log('🚨 Token was modified during concurrent calls!', 'error');
+            }
+            
+        } catch (error) {
+            log(`❌ Concurrent call simulation failed: ${error.message}`, 'error');
+        }
+        
+        log('✅ React app simulation complete', 'success');
+    }
+    
+    // Initialize
+    updateStatus();
+    setInterval(updateStatus, 5000);
+    </script>
+</body>
+</html>

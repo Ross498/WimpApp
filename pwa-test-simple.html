@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Test</title>
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #1e293b; 
+            color: white; 
+            text-align: center;
+        }
+        .test-result { 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+        }
+        .success { background: #10b981; }
+        .error { background: #ef4444; }
+        .warning { background: #f59e0b; color: black; }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <h1>🔍 WIMP PWA Test</h1>
+    
+    <div id="results"></div>
+    
+    <button onclick="testReactApp()">Test React App</button>
+    <button onclick="installPWA()" id="installBtn" style="display:none;">Install PWA</button>
+    
+    <script>
+        let deferredPrompt;
+        const results = document.getElementById('results');
+        
+        function addResult(message, type = 'success') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+        
+        // Test PWA capabilities
+        async function runTests() {
+            addResult('Starting PWA tests...', 'warning');
+            
+            // Test if running as PWA
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                         window.navigator.standalone ||
+                         document.referrer.includes('android-app://');
+            
+            if (isPWA) {
+                addResult('✅ Running as PWA');
+            } else {
+                addResult('⚠️ Running in browser - add to home screen to test PWA mode', 'warning');
+            }
+            
+            // Test service worker
+            if ('serviceWorker' in navigator) {
+                addResult('✅ Service Worker supported');
+                try {
+                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    addResult('✅ Service Worker registered');
+                } catch (error) {
+                    addResult('❌ Service Worker registration failed: ' + error.message, 'error');
+                }
+            } else {
+                addResult('❌ Service Worker not supported', 'error');
+            }
+            
+            // Test manifest
+            try {
+                const manifestResponse = await fetch('/manifest.json');
+                if (manifestResponse.ok) {
+                    addResult('✅ Manifest accessible');
+                } else {
+                    addResult('❌ Manifest not accessible', 'error');
+                }
+            } catch (error) {
+                addResult('❌ Manifest fetch failed', 'error');
+            }
+            
+            // Test React app
+            try {
+                const reactResponse = await fetch('/assets/index.js');
+                if (reactResponse.ok) {
+                    addResult('✅ React app assets accessible');
+                } else {
+                    addResult('❌ React app assets not accessible', 'error');
+                }
+            } catch (error) {
+                addResult('❌ React app test failed', 'error');
+            }
+        }
+        
+        function testReactApp() {
+            addResult('Redirecting to React app...', 'warning');
+            window.location.href = '/app?pwa=true';
+        }
+        
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        addResult('✅ PWA install accepted');
+                    } else {
+                        addResult('❌ PWA install dismissed', 'error');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+        
+        // Listen for install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').style.display = 'block';
+            addResult('⚡ PWA can be installed!', 'warning');
+        });
+        
+        // Run tests on load
+        runTests();
+    </script>
+</body>
+</html>

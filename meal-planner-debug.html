@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Planner UI Debug Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-2xl font-bold text-gray-800 mb-4">🍽️ Meal Planner UI Debug Tool</h1>
+            <p class="text-gray-600 mb-4">This tool helps diagnose UI issues with the meal planner interface.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <button onclick="testAuthStatus()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    🔐 Test Authentication
+                </button>
+                <button onclick="testSubscriptionStatus()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    💳 Test Subscription Status
+                </button>
+                <button onclick="testMealPlansAPI()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">
+                    🍽️ Test Meal Plans API
+                </button>
+                <button onclick="testCacheStatus()" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">
+                    📱 Check App Cache
+                </button>
+                <button onclick="clearAllCache()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                    🧹 Clear All Cache
+                </button>
+                <button onclick="goToMealPlanner()" class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600">
+                    🚀 Go to Meal Planner
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">🔍 Debug Results</h2>
+            <div id="debug-output" class="bg-gray-50 p-4 rounded-lg min-h-96 font-mono text-sm overflow-auto">
+                <div class="text-gray-500">Click any button above to start debugging...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const output = document.getElementById('debug-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                info: 'text-gray-700',
+                success: 'text-green-600',
+                error: 'text-red-600',
+                warning: 'text-orange-600'
+            };
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `mb-2 ${colors[type]}`;
+            logEntry.innerHTML = `<span class="text-gray-400">[${timestamp}]</span> ${message}`;
+            
+            if (output.children.length === 1 && output.children[0].textContent.includes('Click any button')) {
+                output.innerHTML = '';
+            }
+            
+            output.appendChild(logEntry);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function testAuthStatus() {
+            log('🔐 Testing authentication status...', 'info');
+            
+            try {
+                const response = await fetch('/api/auth/status', {
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`Auth API Response: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                log(`Auth Data: ${JSON.stringify(data, null, 2)}`, 'info');
+                
+                // Check cookies
+                const cookies = document.cookie;
+                log(`Cookies: ${cookies || 'No cookies found'}`, cookies ? 'success' : 'warning');
+                
+            } catch (error) {
+                log(`Auth Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSubscriptionStatus() {
+            log('💳 Testing subscription status...', 'info');
+            
+            try {
+                const response = await fetch('/api/subscription/status', {
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`Subscription API Response: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                log(`Subscription Data: ${JSON.stringify(data, null, 2)}`, 'info');
+                
+                if (data.isPremium !== undefined) {
+                    log(`Premium Status: ${data.isPremium ? 'PREMIUM USER' : 'FREE USER'}`, data.isPremium ? 'success' : 'warning');
+                }
+                
+            } catch (error) {
+                log(`Subscription Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMealPlansAPI() {
+            log('🍽️ Testing meal plans API...', 'info');
+            
+            try {
+                const response = await fetch('/api/meal-plans', {
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`Meal Plans API Response: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                log(`Meal Plans Data: ${JSON.stringify(data, null, 2)}`, 'info');
+                
+                if (data.plans) {
+                    log(`Found ${data.plans.length} meal plans`, data.plans.length > 0 ? 'success' : 'warning');
+                }
+                
+                // Test AI meal plans too
+                const aiResponse = await fetch('/api/ai-meal-plans', {
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`AI Meal Plans API Response: ${aiResponse.status} ${aiResponse.statusText}`, aiResponse.ok ? 'success' : 'error');
+                
+                const aiData = await aiResponse.json();
+                log(`AI Meal Plans Data: ${JSON.stringify(aiData, null, 2)}`, 'info');
+                
+            } catch (error) {
+                log(`Meal Plans Error: ${error.message}`, 'error');
+            }
+        }
+
+        function testCacheStatus() {
+            log('📱 Checking app cache status...', 'info');
+            
+            // Check localStorage
+            const keys = Object.keys(localStorage);
+            log(`LocalStorage keys found: ${keys.length}`, keys.length > 0 ? 'info' : 'warning');
+            keys.forEach(key => {
+                if (key.includes('auth') || key.includes('subscription') || key.includes('meal')) {
+                    const value = localStorage.getItem(key);
+                    log(`📱 "${key}": ${value?.substring(0, 100)}${value?.length > 100 ? '...' : ''}`, 'info');
+                }
+            });
+            
+            // Check sessionStorage
+            const sessionKeys = Object.keys(sessionStorage);
+            log(`SessionStorage keys found: ${sessionKeys.length}`, sessionKeys.length > 0 ? 'info' : 'warning');
+            
+            // Check service worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    log(`Service Workers found: ${registrations.length}`, registrations.length > 0 ? 'info' : 'warning');
+                    registrations.forEach((registration, index) => {
+                        log(`SW ${index}: ${registration.scope}`, 'info');
+                    });
+                });
+            } else {
+                log('Service Worker not supported', 'warning');
+            }
+            
+            // Check if React is loaded
+            const reactElements = document.querySelectorAll('[data-reactroot], [data-react-app]');
+            log(`React elements in main app: ${reactElements.length}`, reactElements.length > 0 ? 'success' : 'error');
+        }
+
+        function clearAllCache() {
+            log('🧹 Clearing all cache...', 'warning');
+            
+            // Clear localStorage
+            const localKeys = Object.keys(localStorage);
+            localKeys.forEach(key => localStorage.removeItem(key));
+            log(`Cleared ${localKeys.length} localStorage items`, 'success');
+            
+            // Clear sessionStorage
+            const sessionKeys = Object.keys(sessionStorage);
+            sessionStorage.clear();
+            log(`Cleared ${sessionKeys.length} sessionStorage items`, 'success');
+            
+            // Unregister service workers
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    registrations.forEach(registration => {
+                        registration.unregister();
+                        log(`Unregistered service worker: ${registration.scope}`, 'success');
+                    });
+                });
+            }
+            
+            // Clear cookies (domain-specific)
+            document.cookie.split(";").forEach(cookie => {
+                const eqPos = cookie.indexOf("=");
+                const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+                document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+            });
+            log('Cleared cookies', 'success');
+            
+            log('✅ Cache cleared! Please refresh the main app.', 'success');
+        }
+
+        function goToMealPlanner() {
+            log('🚀 Redirecting to meal planner...', 'info');
+            window.open('/app#favorites', '_blank');
+        }
+
+        // Auto-run basic checks on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            log('🔧 Meal Planner Debug Tool loaded', 'success');
+            log('Click the buttons above to run specific tests', 'info');
+        });
+    </script>
+</body>
+</html>

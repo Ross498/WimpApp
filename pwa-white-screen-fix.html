@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>PWA White Screen Debug Tool</title>
+    <style>
+        body {
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #f0f0f0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 8px;
+        }
+        .btn {
+            background: #4ade80;
+            color: #0a0a0a;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 5px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .result {
+            background: #262626;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .warning { color: #fbbf24; }
+        .info { color: #60a5fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 PWA White Screen Debug Tool</h1>
+        <p>This tool helps diagnose white screen issues when WIMP is added to home screen</p>
+        
+        <div class="controls">
+            <button class="btn" onclick="testPWAMode()">Test PWA Detection</button>
+            <button class="btn" onclick="testAssetLoading()">Test Asset Loading</button>
+            <button class="btn" onclick="testReactMount()">Test React Mount</button>
+            <button class="btn" onclick="testManifest()">Test Manifest</button>
+            <button class="btn" onclick="testAuthentication()">Test Authentication</button>
+            <button class="btn" onclick="clearAllCaches()">Clear PWA Caches</button>
+            <button class="btn" onclick="testFullFlow()">Full PWA Test</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const results = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        function testPWAMode() {
+            log('🔍 Testing PWA mode detection...', 'info');
+            
+            // Check if running in standalone mode
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+            const isIOSPWA = window.navigator.standalone;
+            const isPWAParam = new URLSearchParams(window.location.search).get('pwa') === 'true';
+            
+            log(`Standalone mode: ${isStandalone}`, isStandalone ? 'success' : 'warning');
+            log(`iOS PWA: ${isIOSPWA}`, isIOSPWA ? 'success' : 'warning');
+            log(`PWA URL param: ${isPWAParam}`, isPWAParam ? 'success' : 'info');
+            log(`User agent: ${navigator.userAgent}`, 'info');
+            log(`Viewport: ${window.innerWidth}x${window.innerHeight}`, 'info');
+        }
+        
+        async function testAssetLoading() {
+            log('📦 Testing critical asset loading...', 'info');
+            
+            const assets = [
+                '/assets/index.js',
+                '/assets/index.css',
+                '/manifest.json',
+                '/app-icon-pan-egg.png'
+            ];
+            
+            for (const asset of assets) {
+                try {
+                    const response = await fetch(asset);
+                    if (response.ok) {
+                        log(`✅ ${asset}: OK (${response.status})`, 'success');
+                    } else {
+                        log(`❌ ${asset}: Failed (${response.status})`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ ${asset}: Error - ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function testReactMount() {
+            log('⚛️ Testing React application mount...', 'info');
+            
+            try {
+                // Test if React app endpoint responds
+                const response = await fetch('/app');
+                if (response.ok) {
+                    const html = await response.text();
+                    const hasRootDiv = html.includes('<div id="root">');
+                    const hasReactScript = html.includes('assets/index.js');
+                    
+                    log(`✅ /app route: OK (${response.status})`, 'success');
+                    log(`Root div present: ${hasRootDiv}`, hasRootDiv ? 'success' : 'error');
+                    log(`React script present: ${hasReactScript}`, hasReactScript ? 'success' : 'error');
+                    
+                    // Check if there's content in root div
+                    setTimeout(() => {
+                        const rootEl = document.createElement('iframe');
+                        rootEl.src = '/app';
+                        rootEl.style.width = '1px';
+                        rootEl.style.height = '1px';
+                        rootEl.style.opacity = '0';
+                        document.body.appendChild(rootEl);
+                        
+                        setTimeout(() => {
+                            try {
+                                const iframeDoc = rootEl.contentDocument;
+                                const rootDiv = iframeDoc.getElementById('root');
+                                const hasContent = rootDiv && rootDiv.innerHTML.trim().length > 0;
+                                log(`React content rendered: ${hasContent}`, hasContent ? 'success' : 'error');
+                                document.body.removeChild(rootEl);
+                            } catch (e) {
+                                log(`Cannot access iframe content: ${e.message}`, 'warning');
+                                document.body.removeChild(rootEl);
+                            }
+                        }, 3000);
+                    }, 1000);
+                } else {
+                    log(`❌ /app route failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ React mount test error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testManifest() {
+            log('📱 Testing PWA manifest...', 'info');
+            
+            try {
+                const response = await fetch('/manifest.json');
+                if (response.ok) {
+                    const manifest = await response.json();
+                    log(`✅ Manifest loaded: ${manifest.name}`, 'success');
+                    log(`Start URL: ${manifest.start_url}`, 'info');
+                    log(`Display mode: ${manifest.display}`, 'info');
+                    log(`Icons count: ${manifest.icons?.length || 0}`, 'info');
+                } else {
+                    log(`❌ Manifest failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Manifest error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAuthentication() {
+            log('🔐 Testing authentication state...', 'info');
+            
+            const token = localStorage.getItem('authToken');
+            const user = localStorage.getItem('user');
+            const isAuthenticated = localStorage.getItem('isAuthenticated');
+            
+            log(`Auth token: ${token ? 'Present' : 'Missing'}`, token ? 'success' : 'warning');
+            log(`User data: ${user ? 'Present' : 'Missing'}`, user ? 'success' : 'warning');
+            log(`Auth flag: ${isAuthenticated}`, isAuthenticated === 'true' ? 'success' : 'warning');
+            
+            if (token) {
+                try {
+                    const response = await fetch('/api/auth/me', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    log(`Auth validation: ${response.status}`, response.ok ? 'success' : 'error');
+                } catch (error) {
+                    log(`Auth validation error: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function clearAllCaches() {
+            log('🧹 Clearing all PWA caches...', 'info');
+            
+            // Clear localStorage
+            localStorage.clear();
+            log('✅ LocalStorage cleared', 'success');
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            log('✅ SessionStorage cleared', 'success');
+            
+            // Clear service worker caches
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                    }
+                    log(`✅ ${registrations.length} service workers unregistered`, 'success');
+                } catch (error) {
+                    log(`❌ Service worker clear error: ${error.message}`, 'error');
+                }
+            }
+            
+            // Clear cache storage
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    log(`✅ ${cacheNames.length} cache storages cleared`, 'success');
+                } catch (error) {
+                    log(`❌ Cache storage clear error: ${error.message}`, 'error');
+                }
+            }
+            
+            log('🔄 Refresh page to test clean PWA state', 'info');
+        }
+        
+        async function testFullFlow() {
+            log('🚀 Running comprehensive PWA test...', 'info');
+            await testPWAMode();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testAssetLoading();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testManifest();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testAuthentication();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await testReactMount();
+            log('✅ Full PWA test complete', 'success');
+        }
+        
+        // Auto-run basic tests on load
+        setTimeout(() => {
+            log('🔧 PWA White Screen Debug Tool loaded', 'info');
+            testPWAMode();
+        }, 500);
+    </script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIMP - Offline</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .offline-container {
+            max-width: 400px;
+            padding: 40px 20px;
+        }
+        
+        .offline-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+        
+        h1 {
+            color: #F59E0B;
+            margin-bottom: 16px;
+            font-size: 24px;
+        }
+        
+        p {
+            line-height: 1.6;
+            margin-bottom: 16px;
+            opacity: 0.9;
+        }
+        
+        .retry-button {
+            background: #F59E0B;
+            color: #1E293B;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.2s;
+        }
+        
+        .retry-button:hover {
+            background: #D97706;
+            transform: translateY(-1px);
+        }
+        
+        .cached-notice {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">🍳</div>
+        <h1>You're Offline</h1>
+        <p>WIMP Kitchen Companion needs an internet connection for the latest recipes and AI features.</p>
+        <p>Some cached content may still be available while offline.</p>
+        
+        <button class="retry-button" onclick="window.location.reload()">
+            Try Again
+        </button>
+        
+        <div class="cached-notice">
+            💡 Your favorites and recently viewed recipes may still be accessible
+        </div>
+    </div>
+    
+    <script>
+        // Auto-retry when connection is restored
+        window.addEventListener('online', () => {
+            window.location.reload();
+        });
+        
+        // Check if we can access the app
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(() => {
+                console.log('Service worker ready - checking cache');
+            });
+        }
+    </script>
+</body>
+</html>

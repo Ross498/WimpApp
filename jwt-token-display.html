@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JWT Token Display - WIMP Debug</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0a0a0a;
+            color: #f0f0f0;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            background: #1a1a2e;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #4c6ef5;
+        }
+        .token-display {
+            background: #001100;
+            border: 2px solid #00aa00;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .token-box {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border: 1px solid #00aa00;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .copy-button {
+            background: #006600;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 10px 5px;
+            font-family: monospace;
+        }
+        .copy-button:hover {
+            background: #008800;
+        }
+        .success {
+            background: #003300;
+            color: #00ff00;
+            padding: 15px;
+            border: 1px solid #00aa00;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .instruction {
+            background: #333300;
+            color: #ffff00;
+            padding: 15px;
+            border: 1px solid #aaaa00;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .test-section {
+            background: #1a1a1a;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            border-left: 4px solid #4c6ef5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔐 JWT Token Display Tool</h1>
+        <p>Valid JWT Token for WIMP API Testing</p>
+    </div>
+
+    <div class="success">
+        <h2>✅ Valid JWT Token Ready</h2>
+        <p><strong>User:</strong> Tayden User (tayden)<br>
+        <strong>Email:</strong> tayden@gmail.com<br>
+        <strong>ID:</strong> 88<br>
+        <strong>Subscription:</strong> Premium<br>
+        <strong>Status:</strong> Authentication verified successful</p>
+    </div>
+
+    <div class="token-display">
+        <h3>🎯 JWT TOKEN FOR API TESTING:</h3>
+        <div class="token-box" id="jwtToken">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ODgsInVzZXJuYW1lIjoidGF5ZGVuIiwiZW1haWwiOiJ0YXlkZW5AZ21haWwuY29tIiwibmFtZSI6IlRheWRlbiBVc2VyIiwidXNlcklkIjoiODgiLCJpYXQiOjE3NTY3MzM1MTIsImV4cCI6MTc1NzMzODMxMn0.jYvsYTe7g6bgTOAi0vmWHxMkkpdyDBbCkOxKKlTyfXo</div>
+        
+        <button class="copy-button" onclick="copyToken()">📋 Copy JWT Token</button>
+        <button class="copy-button" onclick="testToken()">🔧 Test Token</button>
+        <button class="copy-button" onclick="generateCurlCommand()">⚡ Generate curl Command</button>
+        <button class="copy-button" onclick="openPostman()">📮 Postman Instructions</button>
+    </div>
+
+    <div class="instruction">
+        <h3>📋 How to Use This JWT Token:</h3>
+        <ol>
+            <li><strong>Copy Token:</strong> Click "Copy JWT Token" button above</li>
+            <li><strong>API Headers:</strong> Add header: <code>Authorization: Bearer [paste-token-here]</code></li>
+            <li><strong>Test Endpoints:</strong> Use with /api/financial/overview, /api/auth/me, etc.</li>
+            <li><strong>curl Example:</strong> Click "Generate curl Command" for ready-to-use commands</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h3>🧪 Quick API Tests</h3>
+        <button class="copy-button" onclick="testFinancialAPI()">💰 Test Financial API</button>
+        <button class="copy-button" onclick="testAuthAPI()">🔐 Test Auth API</button>
+        <div id="testResults" style="margin-top: 15px;"></div>
+    </div>
+
+    <div id="curlCommands" class="test-section" style="display: none;">
+        <h3>⚡ Ready-to-Use curl Commands</h3>
+        <div class="token-box" id="curlContent"></div>
+        <button class="copy-button" onclick="copyCurlCommands()">📋 Copy All Commands</button>
+    </div>
+
+    <script>
+        const JWT_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ODgsInVzZXJuYW1lIjoidGF5ZGVuIiwiZW1haWwiOiJ0YXlkZW5AZ21haWwuY29tIiwibmFtZSI6IlRheWRlbiBVc2VyIiwidXNlcklkIjoiODgiLCJpYXQiOjE3NTY3MzM1MTIsImV4cCI6MTc1NzMzODMxMn0.jYvsYTe7g6bgTOAi0vmWHxMkkpdyDBbCkOxKKlTyfXo';
+
+        function copyToken() {
+            navigator.clipboard.writeText(JWT_TOKEN).then(() => {
+                alert('✅ JWT Token copied to clipboard!');
+                console.log('🔐 JWT TOKEN COPIED:', JWT_TOKEN);
+            }).catch(err => {
+                // Fallback for older browsers
+                const tokenElement = document.getElementById('jwtToken');
+                tokenElement.select();
+                document.execCommand('copy');
+                alert('✅ JWT Token copied to clipboard!');
+            });
+        }
+
+        async function testToken() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '<div style="color: yellow;">Testing JWT token...</div>';
+
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    results.innerHTML = `<div class="success">
+                        ✅ Token Valid! User: ${data.name} (${data.email})
+                    </div>`;
+                } else {
+                    results.innerHTML = `<div style="color: red;">❌ Token Test Failed: ${response.status}</div>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<div style="color: red;">❌ Test Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testFinancialAPI() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '<div style="color: yellow;">Testing Financial API...</div>';
+
+            try {
+                const response = await fetch('/api/financial/overview', {
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const metrics = data.data;
+                    results.innerHTML = `<div class="success">
+                        ✅ Financial API Success!<br>
+                        Monthly Spending: R${(metrics.monthlySpending || 0).toFixed(2)}<br>
+                        Pantry Value: R${(metrics.pantryValue || 0).toFixed(0)}<br>
+                        Receipts Scanned: ${metrics.receiptsScanned || 0}
+                    </div>`;
+                } else {
+                    results.innerHTML = `<div style="color: red;">❌ Financial API Failed: ${response.status}</div>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<div style="color: red;">❌ Financial API Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testAuthAPI() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '<div style="color: yellow;">Testing Auth API...</div>';
+
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    results.innerHTML = `<div class="success">
+                        ✅ Auth API Success!<br>
+                        User: ${data.name}<br>
+                        Email: ${data.email}<br>
+                        ID: ${data.id}
+                    </div>`;
+                } else {
+                    results.innerHTML = `<div style="color: red;">❌ Auth API Failed: ${response.status}</div>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<div style="color: red;">❌ Auth API Error: ${error.message}</div>`;
+            }
+        }
+
+        function generateCurlCommand() {
+            const curlSection = document.getElementById('curlCommands');
+            const curlContent = document.getElementById('curlContent');
+            
+            const baseUrl = window.location.origin;
+            const commands = `# Test Authentication
+curl -H "Authorization: Bearer ${JWT_TOKEN}" ${baseUrl}/api/auth/me
+
+# Test Financial Overview
+curl -H "Authorization: Bearer ${JWT_TOKEN}" ${baseUrl}/api/financial/overview
+
+# Test Financial Budget
+curl -H "Authorization: Bearer ${JWT_TOKEN}" ${baseUrl}/api/financial/budget
+
+# Test Pantry Value
+curl -H "Authorization: Bearer ${JWT_TOKEN}" ${baseUrl}/api/financial/pantry-value
+
+# Test Receipt Scanning (POST)
+curl -X POST -H "Authorization: Bearer ${JWT_TOKEN}" -H "Content-Type: application/json" -d '{"receiptText":"Checkers\\nBread R25.99\\nMilk R32.50\\nTotal: R58.49"}' ${baseUrl}/api/ai/scan-receipt`;
+
+            curlContent.textContent = commands;
+            curlSection.style.display = 'block';
+        }
+
+        function copyCurlCommands() {
+            const curlContent = document.getElementById('curlContent').textContent;
+            navigator.clipboard.writeText(curlContent).then(() => {
+                alert('✅ curl commands copied to clipboard!');
+            });
+        }
+
+        function openPostman() {
+            alert(`📮 Postman Setup Instructions:
+
+1. Create new request
+2. Add Header: Authorization
+3. Value: Bearer ${JWT_TOKEN}
+4. Test these endpoints:
+   - GET /api/auth/me
+   - GET /api/financial/overview
+   - GET /api/financial/budget
+   - POST /api/ai/scan-receipt
+
+The JWT token is already copied to clipboard!`);
+            copyToken();
+        }
+
+        console.log('🔐 JWT Debug Tool loaded');
+        console.log('🎯 Token ready for testing:', JWT_TOKEN);
+    </script>
+</body>
+</html>

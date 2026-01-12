@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PWA Comprehensive Test - WIMP Kitchen</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: white;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .status-card {
+      background: rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .status-icon {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+    .status-title {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .status-value {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    .test-section {
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+    .test-button {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      margin: 5px;
+      transition: transform 0.2s;
+    }
+    .test-button:hover {
+      transform: translateY(-2px);
+    }
+    .test-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .log-container {
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 12px;
+    }
+    .log-entry {
+      margin-bottom: 5px;
+      padding: 2px 0;
+    }
+    .log-success { color: #4ade80; }
+    .log-error { color: #f87171; }
+    .log-warning { color: #fbbf24; }
+    .log-info { color: #60a5fa; }
+    
+    @media (max-width: 768px) {
+      .container { padding: 20px; margin: 10px; }
+      .status-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🍳 PWA Comprehensive Test Suite</h1>
+      <p>Complete PWA functionality verification for WIMP Kitchen Companion</p>
+    </div>
+
+    <div class="status-grid">
+      <div class="status-card">
+        <div class="status-icon" id="pwa-icon">📱</div>
+        <div class="status-title">PWA Mode</div>
+        <div class="status-value" id="pwa-status">Checking...</div>
+      </div>
+      
+      <div class="status-card">
+        <div class="status-icon" id="sw-icon">⚙️</div>
+        <div class="status-title">Service Worker</div>
+        <div class="status-value" id="sw-status">Checking...</div>
+      </div>
+      
+      <div class="status-card">
+        <div class="status-icon" id="storage-icon">💾</div>
+        <div class="status-title">Storage</div>
+        <div class="status-value" id="storage-status">Checking...</div>
+      </div>
+      
+      <div class="status-card">
+        <div class="status-icon" id="network-icon">🌐</div>
+        <div class="status-title">Network</div>
+        <div class="status-value" id="network-status">Checking...</div>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h3>🔧 PWA Installation Tests</h3>
+      <button class="test-button" onclick="testPWAInstallation()">Test PWA Installation</button>
+      <button class="test-button" onclick="simulatePWALaunch()">Simulate PWA Launch</button>
+      <button class="test-button" onclick="testWhiteScreenPrevention()">Test White Screen Prevention</button>
+    </div>
+
+    <div class="test-section">
+      <h3>🚀 App Launch Tests</h3>
+      <button class="test-button" onclick="testAppLaunchBrowser()">Test Browser Launch</button>
+      <button class="test-button" onclick="testAppLaunchPWA()">Test PWA Launch</button>
+      <button class="test-button" onclick="testAppLaunchStandalone()">Test Standalone Launch</button>
+    </div>
+
+    <div class="test-section">
+      <h3>💾 Storage & Cache Tests</h3>
+      <button class="test-button" onclick="testStorageAccess()">Test Storage Access</button>
+      <button class="test-button" onclick="testCacheManagement()">Test Cache Management</button>
+      <button class="test-button" onclick="clearAllCache()">Clear All Cache</button>
+    </div>
+
+    <div class="test-section">
+      <h3>📊 Performance Tests</h3>
+      <button class="test-button" onclick="measureLoadTime()">Measure Load Time</button>
+      <button class="test-button" onclick="testAssetLoading()">Test Asset Loading</button>
+      <button class="test-button" onclick="runComprehensiveTest()">Run Full Test Suite</button>
+    </div>
+
+    <div class="log-container" id="log-container">
+      <div class="log-entry log-info">[PWA TEST] Ready for comprehensive testing...</div>
+    </div>
+  </div>
+
+  <script>
+    // Global test state
+    let testResults = {
+      pwa: false,
+      serviceWorker: false,
+      storage: false,
+      network: false
+    };
+
+    // Logging system
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const logContainer = document.getElementById('log-container');
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.textContent = `[${timestamp}] ${message}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+      console.log(`[PWA TEST] ${message}`);
+    }
+
+    // PWA Environment Detection
+    function detectPWAEnvironment() {
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                    navigator.standalone === true ||
+                    document.referrer.includes('android-app://');
+      
+      const isHomescreenLaunch = new URLSearchParams(window.location.search).has('pwa') ||
+                                 window.location.search.includes('pwa=true');
+      
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isAndroid = /Android/.test(navigator.userAgent);
+      
+      return {
+        isPWA,
+        isHomescreenLaunch,
+        isIOS,
+        isAndroid,
+        isMobile: isIOS || isAndroid,
+        userAgent: navigator.userAgent,
+        displayMode: window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser'
+      };
+    }
+
+    // Initial status check
+    function checkInitialStatus() {
+      const pwaEnv = detectPWAEnvironment();
+      
+      // PWA Status
+      const pwaStatus = document.getElementById('pwa-status');
+      const pwaIcon = document.getElementById('pwa-icon');
+      if (pwaEnv.isPWA || pwaEnv.isHomescreenLaunch) {
+        pwaStatus.textContent = '✅ PWA Mode Active';
+        pwaIcon.textContent = '✅';
+        testResults.pwa = true;
+        log('PWA mode detected successfully', 'success');
+      } else {
+        pwaStatus.textContent = '❌ Browser Mode';
+        pwaIcon.textContent = '❌';
+        log('Running in browser mode', 'warning');
+      }
+
+      // Service Worker Status
+      const swStatus = document.getElementById('sw-status');
+      const swIcon = document.getElementById('sw-icon');
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          if (registrations.length > 0) {
+            swStatus.textContent = '✅ Active';
+            swIcon.textContent = '✅';
+            testResults.serviceWorker = true;
+            log(`Service Worker active: ${registrations.length} registration(s)`, 'success');
+          } else {
+            swStatus.textContent = '❌ Not Registered';
+            swIcon.textContent = '❌';
+            log('No service worker registrations found', 'warning');
+          }
+        });
+      } else {
+        swStatus.textContent = '❌ Not Supported';
+        swIcon.textContent = '❌';
+        log('Service Worker not supported', 'error');
+      }
+
+      // Storage Status
+      const storageStatus = document.getElementById('storage-status');
+      const storageIcon = document.getElementById('storage-icon');
+      try {
+        localStorage.setItem('test', 'test');
+        localStorage.removeItem('test');
+        storageStatus.textContent = '✅ Available';
+        storageIcon.textContent = '✅';
+        testResults.storage = true;
+        log('localStorage access confirmed', 'success');
+      } catch (error) {
+        storageStatus.textContent = '❌ Blocked';
+        storageIcon.textContent = '❌';
+        log(`Storage error: ${error.message}`, 'error');
+      }
+
+      // Network Status
+      const networkStatus = document.getElementById('network-status');
+      const networkIcon = document.getElementById('network-icon');
+      if (navigator.onLine) {
+        networkStatus.textContent = '✅ Online';
+        networkIcon.textContent = '✅';
+        testResults.network = true;
+        log('Network connection active', 'success');
+      } else {
+        networkStatus.textContent = '❌ Offline';
+        networkIcon.textContent = '❌';
+        log('Network connection unavailable', 'warning');
+      }
+    }
+
+    // Test Functions
+    function testPWAInstallation() {
+      log('Testing PWA installation capability...', 'info');
+      
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        log('✅ PWA installation supported', 'success');
+        
+        // Check if app is installable
+        window.addEventListener('beforeinstallprompt', (e) => {
+          log('✅ PWA install prompt available', 'success');
+        });
+        
+        // Check if already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+          log('✅ App is already installed as PWA', 'success');
+        }
+      } else {
+        log('❌ PWA installation not supported', 'error');
+      }
+    }
+
+    function simulatePWALaunch() {
+      log('Simulating PWA launch...', 'info');
+      
+      const currentUrl = new URL(window.location);
+      currentUrl.searchParams.set('pwa', 'true');
+      
+      log(`PWA URL: ${currentUrl.toString()}`, 'info');
+      
+      // Open in new window to simulate PWA launch
+      const pwaWindow = window.open(currentUrl.toString(), '_blank', 'width=400,height=700');
+      
+      if (pwaWindow) {
+        log('✅ PWA simulation window opened', 'success');
+        
+        setTimeout(() => {
+          try {
+            pwaWindow.close();
+            log('PWA simulation window closed', 'info');
+          } catch (e) {
+            log('Could not close PWA simulation window', 'warning');
+          }
+        }, 3000);
+      } else {
+        log('❌ Failed to open PWA simulation window', 'error');
+      }
+    }
+
+    function testWhiteScreenPrevention() {
+      log('Testing white screen prevention...', 'info');
+      
+      // Test DOM readiness
+      if (document.readyState === 'complete') {
+        log('✅ DOM is fully loaded', 'success');
+      } else {
+        log('⚠️ DOM not yet complete', 'warning');
+      }
+      
+      // Test root element
+      const root = document.getElementById('root');
+      if (root) {
+        log('✅ React root element found (if testing main app)', 'success');
+      } else {
+        log('ℹ️ No React root element (normal for test page)', 'info');
+      }
+      
+      // Test storage access timing
+      const startTime = performance.now();
+      try {
+        localStorage.setItem('timing-test', Date.now().toString());
+        const retrieved = localStorage.getItem('timing-test');
+        localStorage.removeItem('timing-test');
+        const endTime = performance.now();
+        
+        log(`✅ Storage access time: ${(endTime - startTime).toFixed(2)}ms`, 'success');
+      } catch (error) {
+        log(`❌ Storage timing test failed: ${error.message}`, 'error');
+      }
+    }
+
+    function testAppLaunchBrowser() {
+      log('Testing app launch in browser mode...', 'info');
+      window.open('/app', '_blank');
+      log('✅ Browser launch initiated', 'success');
+    }
+
+    function testAppLaunchPWA() {
+      log('Testing app launch in PWA mode...', 'info');
+      window.open('/app?pwa=true', '_blank');
+      log('✅ PWA launch initiated', 'success');
+    }
+
+    function testAppLaunchStandalone() {
+      log('Testing app launch in standalone mode...', 'info');
+      window.open('/app?pwa=true&standalone=true', '_blank', 'width=400,height=700');
+      log('✅ Standalone launch initiated', 'success');
+    }
+
+    function testStorageAccess() {
+      log('Testing storage access patterns...', 'info');
+      
+      const tests = [
+        { name: 'localStorage', storage: localStorage },
+        { name: 'sessionStorage', storage: sessionStorage }
+      ];
+      
+      tests.forEach(test => {
+        try {
+          const testKey = `test-${Date.now()}`;
+          test.storage.setItem(testKey, JSON.stringify({ test: true, timestamp: Date.now() }));
+          const retrieved = JSON.parse(test.storage.getItem(testKey));
+          test.storage.removeItem(testKey);
+          
+          if (retrieved && retrieved.test === true) {
+            log(`✅ ${test.name} working correctly`, 'success');
+          } else {
+            log(`❌ ${test.name} data integrity failed`, 'error');
+          }
+        } catch (error) {
+          log(`❌ ${test.name} failed: ${error.message}`, 'error');
+        }
+      });
+    }
+
+    function testCacheManagement() {
+      log('Testing cache management...', 'info');
+      
+      if ('caches' in window) {
+        caches.keys().then(cacheNames => {
+          log(`Found ${cacheNames.length} cache(s): ${cacheNames.join(', ')}`, 'info');
+          
+          cacheNames.forEach(cacheName => {
+            caches.open(cacheName).then(cache => {
+              cache.keys().then(keys => {
+                log(`Cache "${cacheName}" contains ${keys.length} entries`, 'info');
+              });
+            });
+          });
+        });
+      } else {
+        log('❌ Cache API not supported', 'error');
+      }
+    }
+
+    function clearAllCache() {
+      log('Clearing all cache...', 'info');
+      
+      if ('caches' in window) {
+        caches.keys().then(cacheNames => {
+          return Promise.all(
+            cacheNames.map(cacheName => {
+              log(`Deleting cache: ${cacheName}`, 'info');
+              return caches.delete(cacheName);
+            })
+          );
+        }).then(() => {
+          log('✅ All caches cleared', 'success');
+        }).catch(error => {
+          log(`❌ Cache clearing failed: ${error.message}`, 'error');
+        });
+      }
+      
+      // Clear storage
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+        log('✅ Local storage cleared', 'success');
+      } catch (error) {
+        log(`❌ Storage clearing failed: ${error.message}`, 'error');
+      }
+    }
+
+    function measureLoadTime() {
+      log('Measuring app load time...', 'info');
+      
+      const startTime = performance.now();
+      
+      fetch('/app')
+        .then(response => {
+          const loadTime = performance.now() - startTime;
+          log(`✅ App response time: ${loadTime.toFixed(2)}ms`, 'success');
+          return response.text();
+        })
+        .then(html => {
+          log(`✅ App HTML size: ${(html.length / 1024).toFixed(2)}KB`, 'success');
+        })
+        .catch(error => {
+          log(`❌ Load time test failed: ${error.message}`, 'error');
+        });
+    }
+
+    function testAssetLoading() {
+      log('Testing asset loading...', 'info');
+      
+      const assets = [
+        '/assets/index.css',
+        '/assets/index.js',
+        '/manifest.json'
+      ];
+      
+      Promise.all(
+        assets.map(asset => 
+          fetch(asset)
+            .then(response => {
+              if (response.ok) {
+                log(`✅ ${asset}: ${response.status} (${response.headers.get('content-type')})`, 'success');
+              } else {
+                log(`❌ ${asset}: ${response.status}`, 'error');
+              }
+            })
+            .catch(error => {
+              log(`❌ ${asset}: ${error.message}`, 'error');
+            })
+        )
+      ).then(() => {
+        log('Asset loading test completed', 'info');
+      });
+    }
+
+    function runComprehensiveTest() {
+      log('🚀 Starting comprehensive PWA test suite...', 'info');
+      
+      const tests = [
+        testPWAInstallation,
+        testWhiteScreenPrevention,
+        testStorageAccess,
+        testCacheManagement,
+        measureLoadTime,
+        testAssetLoading
+      ];
+      
+      tests.forEach((test, index) => {
+        setTimeout(() => {
+          log(`Running test ${index + 1}/${tests.length}...`, 'info');
+          test();
+        }, index * 1000);
+      });
+      
+      setTimeout(() => {
+        log('✅ Comprehensive test suite completed', 'success');
+        log(`Results: PWA=${testResults.pwa}, SW=${testResults.serviceWorker}, Storage=${testResults.storage}, Network=${testResults.network}`, 'info');
+      }, tests.length * 1000 + 500);
+    }
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', () => {
+      log('PWA Comprehensive Test Suite initialized', 'success');
+      checkInitialStatus();
+    });
+
+    // Network status monitoring
+    window.addEventListener('online', () => {
+      log('Network connection restored', 'success');
+      document.getElementById('network-status').textContent = '✅ Online';
+      document.getElementById('network-icon').textContent = '✅';
+    });
+
+    window.addEventListener('offline', () => {
+      log('Network connection lost', 'warning');
+      document.getElementById('network-status').textContent = '❌ Offline';
+      document.getElementById('network-icon').textContent = '❌';
+    });
+  </script>
+</body>
+</html>

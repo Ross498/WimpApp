@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production MIME Type Debug</title>
+    <style>
+        body {
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #f0f0f0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 8px;
+        }
+        .btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            margin: 5px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .btn.success {
+            background: #22c55e;
+        }
+        .result {
+            background: #262626;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .error { border-left: 4px solid #ef4444; }
+        .success { border-left: 4px solid #22c55e; }
+        .warning { border-left: 4px solid #f59e0b; }
+        .info { border-left: 4px solid #3b82f6; }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .server-test {
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Production MIME Type Debug Tool</h1>
+        <p>This tool diagnoses why wimpapp.co.za serves text/html instead of proper MIME types</p>
+        
+        <div class="comparison">
+            <div class="server-test">
+                <h3>🌐 Production Server (wimpapp.co.za)</h3>
+                <button class="btn" onclick="testProduction()">Test Production Assets</button>
+                <div id="prod-results"></div>
+            </div>
+            
+            <div class="server-test">
+                <h3 id="local-server-title">🏠 Local Server</h3>
+                <button class="btn success" onclick="testLocal()">Test Local Assets</button>
+                <div id="local-results"></div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="compareServers()">Compare Both Servers</button>
+            <button class="btn" onclick="testCORS()">Test CORS Headers</button>
+            <button class="btn" onclick="testDeployment()">Test Deployment Status</button>
+            <button class="btn" onclick="findRootCause()">Find Root Cause</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const results = document.getElementById('results');
+        const prodResults = document.getElementById('prod-results');
+        const localResults = document.getElementById('local-results');
+        
+        // Update local server title with correct URL
+        window.addEventListener('DOMContentLoaded', function() {
+            const isReplit = window.location.hostname.includes('replit.dev') || window.location.hostname.includes('repl.run');
+            const localUrl = isReplit ? window.location.hostname : 'localhost:5000';
+            document.getElementById('local-server-title').textContent = `🏠 Local Server (${localUrl})`;
+        });
+        
+        function log(message, type = 'info', container = results) {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        async function testServer(baseUrl, container, serverName) {
+            log(`🔍 Testing ${serverName} server...`, 'info', container);
+            
+            const assets = [
+                '/assets/index.css',
+                '/assets/index.js',
+                '/app',
+                '/manifest.json'
+            ];
+            
+            const results = {};
+            
+            for (const asset of assets) {
+                try {
+                    const url = baseUrl + asset;
+                    log(`Testing: ${url}`, 'info', container);
+                    
+                    const response = await fetch(url, { 
+                        method: 'HEAD', 
+                        cache: 'no-cache',
+                        mode: 'cors'
+                    });
+                    
+                    const contentType = response.headers.get('content-type') || 'MISSING';
+                    const contentLength = response.headers.get('content-length') || 'UNKNOWN';
+                    const server = response.headers.get('server') || 'UNKNOWN';
+                    const cacheControl = response.headers.get('cache-control') || 'UNKNOWN';
+                    
+                    results[asset] = {
+                        status: response.status,
+                        contentType,
+                        contentLength,
+                        server,
+                        cacheControl,
+                        ok: response.ok
+                    };
+                    
+                    const isCorrectMime = 
+                        (asset.endsWith('.css') && contentType.includes('text/css')) ||
+                        (asset.endsWith('.js') && contentType.includes('javascript')) ||
+                        (asset.endsWith('.json') && contentType.includes('json')) ||
+                        (asset === '/app' && contentType.includes('text/html'));
+                    
+                    const status = response.ok && isCorrectMime ? 'success' : 'error';
+                    
+                    log(`${asset}: ${response.status} | ${contentType} | ${contentLength} bytes`, status, container);
+                    
+                    if (!isCorrectMime && response.ok) {
+                        log(`❌ WRONG MIME TYPE for ${asset}!`, 'error', container);
+                    }
+                    
+                } catch (error) {
+                    results[asset] = { error: error.message };
+                    log(`❌ ${asset}: ${error.message}`, 'error', container);
+                }
+            }
+            
+            return results;
+        }
+        
+        async function testProduction() {
+            return await testServer('https://wimpapp.co.za', prodResults, 'Production');
+        }
+        
+        async function testLocal() {
+            // Fix for Replit external domains - don't add :5000 port
+            let localUrl;
+            if (window.location.hostname.includes('replit.dev') || window.location.hostname.includes('repl.run')) {
+                // Replit external domain - use current origin without port
+                localUrl = window.location.protocol + '//' + window.location.hostname;
+            } else {
+                // Local development - use explicit port
+                localUrl = window.location.protocol + '//' + window.location.hostname + ':5000';
+            }
+            return await testServer(localUrl, localResults, `Local (${localUrl})`);
+        }
+        
+        async function compareServers() {
+            log('🔄 Starting comprehensive server comparison...', 'info');
+            
+            const [prodResults, localResults] = await Promise.all([
+                testProduction(),
+                testLocal()
+            ]);
+            
+            log('📊 COMPARISON ANALYSIS:', 'info');
+            
+            Object.keys(prodResults).forEach(asset => {
+                const prod = prodResults[asset];
+                const local = localResults[asset];
+                
+                if (prod.error || local.error) {
+                    log(`${asset}: Network errors detected`, 'error');
+                    return;
+                }
+                
+                const mimeMatch = prod.contentType === local.contentType;
+                const statusMatch = prod.status === local.status;
+                
+                log(`\\n${asset}:`, 'info');
+                log(`  Production: ${prod.status} | ${prod.contentType}`, mimeMatch ? 'success' : 'error');
+                log(`  Local:      ${local.status} | ${local.contentType}`, 'info');
+                
+                if (!mimeMatch) {
+                    log(`  ❌ MIME TYPE MISMATCH!`, 'error');
+                }
+                
+                if (!statusMatch) {
+                    log(`  ❌ STATUS CODE MISMATCH!`, 'error');
+                }
+            });
+        }
+        
+        async function testCORS() {
+            log('🌐 Testing CORS configuration...', 'info');
+            
+            // Fix local URL for Replit
+            let localUrl;
+            if (window.location.hostname.includes('replit.dev') || window.location.hostname.includes('repl.run')) {
+                localUrl = window.location.protocol + '//' + window.location.hostname;
+            } else {
+                localUrl = window.location.protocol + '//' + window.location.hostname + ':5000';
+            }
+            
+            const servers = [
+                { name: 'Production', url: 'https://wimpapp.co.za' },
+                { name: 'Local', url: localUrl }
+            ];
+            
+            for (const server of servers) {
+                try {
+                    const response = await fetch(server.url + '/assets/index.css', {
+                        method: 'OPTIONS',
+                        headers: {
+                            'Origin': window.location.origin,
+                            'Access-Control-Request-Method': 'GET',
+                            'Access-Control-Request-Headers': 'Content-Type'
+                        }
+                    });
+                    
+                    const allowOrigin = response.headers.get('access-control-allow-origin');
+                    const allowMethods = response.headers.get('access-control-allow-methods');
+                    
+                    log(`${server.name} CORS:`, 'info');
+                    log(`  Allow-Origin: ${allowOrigin || 'NOT SET'}`, allowOrigin ? 'success' : 'warning');
+                    log(`  Allow-Methods: ${allowMethods || 'NOT SET'}`, 'info');
+                    
+                } catch (error) {
+                    log(`${server.name} CORS test failed: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function testDeployment() {
+            log('🚀 Testing deployment configuration...', 'info');
+            
+            try {
+                // Test if production has the latest build
+                const prodResponse = await fetch('https://wimpapp.co.za/app', { cache: 'no-cache' });
+                const prodHtml = await prodResponse.text();
+                
+                // Test local server for comparison
+                let localUrl = window.location.hostname.includes('replit.dev') || window.location.hostname.includes('repl.run') 
+                    ? window.location.origin 
+                    : window.location.protocol + '//' + window.location.hostname + ':5000';
+                    
+                log(`Testing local server at: ${localUrl}`, 'info');
+                
+                const hasDebugScript = prodHtml.includes('PWA DEBUG');
+                const hasCorrectCSS = prodHtml.includes('assets/index.css');
+                const hasCorrectJS = prodHtml.includes('assets/index.js');
+                
+                log('Production App Analysis:', 'info');
+                log(`  Has debug script: ${hasDebugScript}`, hasDebugScript ? 'success' : 'warning');
+                log(`  Has CSS link: ${hasCorrectCSS}`, hasCorrectCSS ? 'success' : 'error');
+                log(`  Has JS script: ${hasCorrectJS}`, hasCorrectJS ? 'success' : 'error');
+                
+                // Test the actual asset content
+                const cssResponse = await fetch('https://wimpapp.co.za/assets/index.css', { cache: 'no-cache' });
+                const cssText = await cssResponse.text();
+                
+                const isCSSValid = cssText.includes('@tailwind') || cssText.includes('body') || cssText.includes('.btn');
+                const isHTMLMistake = cssText.includes('<!DOCTYPE html>') || cssText.includes('<html');
+                
+                log('Production CSS Content Analysis:', 'info');
+                log(`  Valid CSS content: ${isCSSValid}`, isCSSValid ? 'success' : 'error');
+                log(`  Contains HTML (BAD): ${isHTMLMistake}`, isHTMLMistake ? 'error' : 'success');
+                
+                if (isHTMLMistake) {
+                    log('❌ CRITICAL: CSS endpoint is serving HTML content!', 'error');
+                    log('This indicates the Express catch-all route is intercepting asset requests.', 'error');
+                }
+                
+            } catch (error) {
+                log(`Deployment test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function findRootCause() {
+            log('🕵️ Root cause analysis starting...', 'info');
+            
+            // Test 1: Check if assets exist at all
+            log('\\n1. Testing asset existence:', 'info');
+            const assetTests = [
+                'https://wimpapp.co.za/assets/index.css',
+                'https://wimpapp.co.za/assets/index.js'
+            ];
+            
+            for (const url of assetTests) {
+                try {
+                    const response = await fetch(url, { method: 'GET', cache: 'no-cache' });
+                    const text = await response.text();
+                    const contentType = response.headers.get('content-type');
+                    
+                    log(`${url}: ${response.status} (${contentType})`, 'info');
+                    
+                    if (text.includes('<!DOCTYPE html>')) {
+                        log(`❌ SERVING HTML INSTEAD OF ASSET!`, 'error');
+                        log(`First 200 chars: ${text.substring(0, 200)}...`, 'error');
+                    } else if (url.endsWith('.css') && text.includes('@tailwind')) {
+                        log(`✅ Valid CSS content detected`, 'success');
+                    } else if (url.endsWith('.js') && text.includes('React')) {
+                        log(`✅ Valid JS content detected`, 'success');
+                    }
+                } catch (error) {
+                    log(`${url}: ${error.message}`, 'error');
+                }
+            }
+            
+            // Test 2: Check Express static serving
+            log('\\n2. Testing Express static middleware:', 'info');
+            try {
+                const response = await fetch('https://wimpapp.co.za/api/health');
+                if (response.ok) {
+                    log('✅ Express server is running', 'success');
+                } else {
+                    log('❌ Express server issues detected', 'error');
+                }
+            } catch (error) {
+                log(`❌ Cannot reach Express server: ${error.message}`, 'error');
+            }
+            
+            // Test 3: Check build files
+            log('\\n3. Deployment vs Local comparison:', 'info');
+            log('If assets serve HTML content on production but work locally,', 'warning');
+            log('the issue is likely:', 'warning');
+            log('- Express catch-all route (*) intercepting asset requests', 'warning');
+            log('- Missing or incorrectly configured express.static middleware', 'warning');
+            log('- Build files not properly deployed to production', 'warning');
+            log('- Reverse proxy (nginx/cloudflare) configuration issues', 'warning');
+            
+            log('\\n🎯 RECOMMENDED FIXES:', 'info');
+            log('1. Verify client/dist/assets/ files exist on production server', 'info');
+            log('2. Check Express static middleware order (must be before catch-all)', 'info');
+            log('3. Verify MIME type headers in Express configuration', 'info');
+            log('4. Test deployment pipeline for asset copying', 'info');
+        }
+        
+        // Auto-run basic tests on load
+        setTimeout(() => {
+            log('🔧 Production MIME Debug Tool loaded', 'info');
+            log('Click "Compare Both Servers" to start diagnosis', 'info');
+        }, 500);
+    </script>
+</body>
+</html>

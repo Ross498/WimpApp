@@ -1,0 +1,375 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Deployment Diagnostic</title>
+    <style>
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            margin: 0;
+            padding: 20px;
+            background: #0f0f0f;
+            color: #00ff00;
+            line-height: 1.4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        .btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            margin: 5px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-family: inherit;
+        }
+        .btn.success { background: #44ff44; color: #000; }
+        .btn.info { background: #4444ff; }
+        .result {
+            background: #262626;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 12px;
+            border-left: 4px solid #666;
+        }
+        .error { border-left-color: #ff4444; color: #ffaaaa; }
+        .success { border-left-color: #44ff44; color: #aaffaa; }
+        .warning { border-left-color: #ffaa44; color: #ffffaa; }
+        .info { border-left-color: #4444ff; color: #aaaaff; }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        h1, h2, h3 { color: #00ffff; }
+        .status { font-weight: bold; padding: 5px 10px; border-radius: 3px; }
+        .status.pass { background: #004400; color: #00ff00; }
+        .status.fail { background: #440000; color: #ff0000; }
+        .critical { background: #440000; padding: 10px; border-radius: 4px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 Production Deployment Diagnostic Tool</h1>
+        <p>Diagnosing why MIME type errors persist after redeployment...</p>
+        
+        <div class="grid">
+            <div>
+                <h3>🌐 Production Server Tests</h3>
+                <button class="btn" onclick="testProductionAssets()">Test Production Assets</button>
+                <button class="btn info" onclick="testProductionRouting()">Test Routing Logic</button>
+                <button class="btn" onclick="testProductionExpress()">Test Express Config</button>
+                <div id="production-results"></div>
+            </div>
+            
+            <div>
+                <h3>🏠 Local Server Comparison</h3>
+                <button class="btn success" onclick="testLocalAssets()">Test Local Assets</button>
+                <button class="btn success" onclick="testLocalRouting()">Test Local Routing</button>
+                <div id="local-results"></div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="runFullDiagnostic()">🔍 Run Full Diagnostic</button>
+            <button class="btn info" onclick="testDeploymentIntegrity()">📦 Test Deployment Integrity</button>
+            <button class="btn" onclick="generateFixReport()">🛠️ Generate Fix Report</button>
+        </div>
+        
+        <div id="results"></div>
+        <div id="fix-recommendations"></div>
+    </div>
+
+    <script>
+        const results = document.getElementById('results');
+        const prodResults = document.getElementById('production-results');
+        const localResults = document.getElementById('local-results');
+        const fixRecommendations = document.getElementById('fix-recommendations');
+        
+        function log(message, type = 'info', container = results) {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    cache: 'no-cache',
+                    ...options
+                });
+                
+                const contentType = response.headers.get('content-type') || 'MISSING';
+                const contentLength = response.headers.get('content-length') || 'UNKNOWN';
+                const server = response.headers.get('server') || 'UNKNOWN';
+                const xPoweredBy = response.headers.get('x-powered-by') || 'UNKNOWN';
+                
+                let content = '';
+                try {
+                    content = await response.text();
+                } catch (e) {
+                    content = `Error reading content: ${e.message}`;
+                }
+                
+                return {
+                    status: response.status,
+                    ok: response.ok,
+                    contentType,
+                    contentLength,
+                    server,
+                    xPoweredBy,
+                    content,
+                    url: response.url
+                };
+            } catch (error) {
+                return {
+                    error: error.message,
+                    status: 0,
+                    ok: false
+                };
+            }
+        }
+        
+        async function testProductionAssets() {
+            log('🌐 Testing Production Assets...', 'info', prodResults);
+            
+            const assets = [
+                'https://wimpapp.co.za/assets/index.css',
+                'https://wimpapp.co.za/assets/index.js',
+                'https://wimpapp.co.za/assets/apiService.js'
+            ];
+            
+            for (const asset of assets) {
+                const result = await makeRequest(asset);
+                const fileName = asset.split('/').pop();
+                
+                log(`\\n📄 ${fileName}:`, 'info', prodResults);
+                log(`  Status: ${result.status}`, result.ok ? 'success' : 'error', prodResults);
+                log(`  Content-Type: ${result.contentType}`, 'info', prodResults);
+                log(`  Length: ${result.contentLength} bytes`, 'info', prodResults);
+                
+                if (result.content) {
+                    const isHTML = result.content.includes('<!DOCTYPE html>');
+                    const isExpectedContent = fileName.endsWith('.css') ? 
+                        result.content.includes('@') || result.content.includes('body') :
+                        result.content.includes('function') || result.content.includes('var');
+                    
+                    if (isHTML) {
+                        log(`  ❌ CRITICAL: Serving HTML instead of ${fileName}!`, 'error', prodResults);
+                        log(`  Preview: ${result.content.substring(0, 100)}...`, 'error', prodResults);
+                    } else if (isExpectedContent) {
+                        log(`  ✅ Valid ${fileName} content detected`, 'success', prodResults);
+                    } else {
+                        log(`  ⚠️ Unexpected content format`, 'warning', prodResults);
+                        log(`  Preview: ${result.content.substring(0, 100)}...`, 'warning', prodResults);
+                    }
+                }
+            }
+        }
+        
+        async function testLocalAssets() {
+            log('🏠 Testing Local Assets...', 'info', localResults);
+            
+            const baseUrl = window.location.hostname.includes('replit') ? 
+                window.location.origin : 
+                `${window.location.protocol}//${window.location.hostname}:5000`;
+            
+            const assets = [
+                `${baseUrl}/assets/index.css`,
+                `${baseUrl}/assets/index.js`,
+                `${baseUrl}/assets/apiService.js`
+            ];
+            
+            for (const asset of assets) {
+                const result = await makeRequest(asset);
+                const fileName = asset.split('/').pop();
+                
+                log(`\\n📄 ${fileName}:`, 'info', localResults);
+                log(`  Status: ${result.status}`, result.ok ? 'success' : 'error', localResults);
+                log(`  Content-Type: ${result.contentType}`, 'info', localResults);
+                log(`  Length: ${result.contentLength} bytes`, 'info', localResults);
+            }
+        }
+        
+        async function testProductionRouting() {
+            log('🔍 Testing Production Routing Logic...', 'info', prodResults);
+            
+            const routes = [
+                'https://wimpapp.co.za/app',
+                'https://wimpapp.co.za/api/health',
+                'https://wimpapp.co.za/manifest.json'
+            ];
+            
+            for (const route of routes) {
+                const result = await makeRequest(route);
+                log(`\\n🌐 ${route.split('/').pop()}:`, 'info', prodResults);
+                log(`  Status: ${result.status} | Type: ${result.contentType}`, 'info', prodResults);
+                
+                if (route.includes('/api/health')) {
+                    if (result.ok && result.contentType.includes('json')) {
+                        log(`  ✅ Express API working correctly`, 'success', prodResults);
+                    } else {
+                        log(`  ❌ Express API not responding properly`, 'error', prodResults);
+                    }
+                }
+            }
+        }
+        
+        async function testProductionExpress() {
+            log('🔧 Testing Production Express Configuration...', 'info', prodResults);
+            
+            // Test if static middleware is working
+            const result = await makeRequest('https://wimpapp.co.za/assets/index.css', {
+                method: 'HEAD'
+            });
+            
+            log(`\\nExpress Static Middleware Test:`, 'info', prodResults);
+            log(`  MIME Type: ${result.contentType}`, 'info', prodResults);
+            log(`  Server: ${result.server}`, 'info', prodResults);
+            log(`  X-Powered-By: ${result.xPoweredBy}`, 'info', prodResults);
+            
+            const expectedMime = 'text/css';
+            const actualMime = result.contentType;
+            
+            if (actualMime.includes(expectedMime)) {
+                log(`  ✅ Static middleware configured correctly`, 'success', prodResults);
+            } else {
+                log(`  ❌ Static middleware misconfigured or catch-all intercepting`, 'error', prodResults);
+                log(`  Expected: ${expectedMime} | Got: ${actualMime}`, 'error', prodResults);
+            }
+        }
+        
+        async function testDeploymentIntegrity() {
+            log('📦 Testing Deployment Integrity...', 'info');
+            
+            // Test if build files exist
+            const buildTests = [
+                'https://wimpapp.co.za/assets/index.css',
+                'https://wimpapp.co.za/assets/index.js'
+            ];
+            
+            log('Checking if build files deployed correctly...', 'info');
+            
+            for (const url of buildTests) {
+                const result = await makeRequest(url);
+                const fileName = url.split('/').pop();
+                
+                if (result.status === 404) {
+                    log(`❌ DEPLOYMENT ISSUE: ${fileName} not found on server`, 'error');
+                } else if (result.content && result.content.includes('<!DOCTYPE html>')) {
+                    log(`❌ ROUTING ISSUE: ${fileName} returns HTML (catch-all problem)`, 'error');
+                } else if (result.ok) {
+                    log(`✅ ${fileName} deployed and accessible`, 'success');
+                } else {
+                    log(`⚠️ ${fileName} status: ${result.status}`, 'warning');
+                }
+            }
+        }
+        
+        async function runFullDiagnostic() {
+            log('🚀 Running Full Production Diagnostic...', 'info');
+            log('=====================================', 'info');
+            
+            await testProductionAssets();
+            await testProductionRouting();
+            await testProductionExpress();
+            await testDeploymentIntegrity();
+            
+            // Summary analysis
+            log('\\n📊 DIAGNOSTIC SUMMARY:', 'info');
+            log('======================', 'info');
+            
+            const cssResult = await makeRequest('https://wimpapp.co.za/assets/index.css');
+            
+            if (cssResult.content && cssResult.content.includes('<!DOCTYPE html>')) {
+                log('🔴 ROOT CAUSE IDENTIFIED: Express catch-all route intercepting assets', 'error');
+                log('🔧 SOLUTION: Fix Express route order in server/index.ts', 'warning');
+            } else if (cssResult.status === 404) {
+                log('🔴 ROOT CAUSE IDENTIFIED: Build files not deployed to production', 'error');
+                log('🔧 SOLUTION: Check deployment process and file copying', 'warning');
+            } else if (cssResult.contentType.includes('text/css')) {
+                log('🟢 ASSETS SERVING CORRECTLY: Issue may be resolved or intermittent', 'success');
+            } else {
+                log('🟡 UNKNOWN ISSUE: Assets exist but MIME type still incorrect', 'warning');
+            }
+        }
+        
+        async function generateFixReport() {
+            const cssResult = await makeRequest('https://wimpapp.co.za/assets/index.css');
+            
+            fixRecommendations.innerHTML = '';
+            
+            const reportDiv = document.createElement('div');
+            reportDiv.className = 'critical';
+            
+            let report = '<h2>🛠️ FIX RECOMMENDATIONS</h2>';
+            
+            if (cssResult.content && cssResult.content.includes('<!DOCTYPE html>')) {
+                report += `
+                <div class="status fail">❌ CATCH-ALL ROUTE PROBLEM</div>
+                <p><strong>Issue</strong>: Express catch-all route app.get('*', ...) is intercepting asset requests</p>
+                <p><strong>Evidence</strong>: CSS endpoint returns HTML content instead of CSS</p>
+                <p><strong>Fix Required</strong>:</p>
+                <ol>
+                    <li>Ensure static middleware runs BEFORE catch-all route</li>
+                    <li>Move asset route handlers above app.get('*', ...)</li>
+                    <li>Verify client/dist/assets/ files exist on production server</li>
+                    <li>Redeploy with correct Express route order</li>
+                </ol>
+                `;
+            } else if (cssResult.status === 404) {
+                report += `
+                <div class="status fail">❌ DEPLOYMENT PROBLEM</div>
+                <p><strong>Issue</strong>: Build files not found on production server</p>
+                <p><strong>Fix Required</strong>:</p>
+                <ol>
+                    <li>Run: npm run build in client/ directory</li>
+                    <li>Verify client/dist/assets/ contains index.css and index.js</li>
+                    <li>Check deployment copies build files to production</li>
+                    <li>Redeploy with build files included</li>
+                </ol>
+                `;
+            } else if (cssResult.contentType.includes('text/css')) {
+                report += `
+                <div class="status pass">✅ MIME TYPES CORRECT</div>
+                <p><strong>Status</strong>: Assets are serving with correct MIME types</p>
+                <p><strong>Possible Causes of User Error</strong>:</p>
+                <ol>
+                    <li>Browser cache still showing old errors</li>
+                    <li>PWA cache needs clearing</li>
+                    <li>Intermittent deployment issue</li>
+                    <li>User testing old cached version</li>
+                </ol>
+                `;
+            }
+            
+            reportDiv.innerHTML = report;
+            fixRecommendations.appendChild(reportDiv);
+        }
+        
+        // Auto-run on load
+        setTimeout(() => {
+            log('🚨 Production Deployment Diagnostic Tool loaded', 'info');
+            log('Click "Run Full Diagnostic" to identify the exact issue', 'warning');
+        }, 500);
+    </script>
+</body>
+</html>

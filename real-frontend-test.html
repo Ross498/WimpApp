@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real Frontend Behavior Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 20px auto; padding: 20px; }
+        .log { padding: 8px; margin: 3px 0; border-radius: 4px; font-family: monospace; font-size: 13px; }
+        .info { background: #e1f5fe; }
+        .success { background: #e8f5e8; }
+        .error { background: #ffebee; }
+        .warning { background: #fff3e0; }
+        button { padding: 10px 20px; margin: 5px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .token-monitor { background: #f5f5f5; padding: 15px; margin: 15px 0; border-left: 4px solid #2196f3; }
+        .api-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+        .api-test { background: #fafafa; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Real Frontend Token Behavior Investigation</h1>
+    <p>This will test the actual frontend React components and see where tokens are being cleared.</p>
+    
+    <button onclick="startInvestigation()">Start Investigation</button>
+    <button onclick="clearEverything()">Clear Storage</button>
+    
+    <div class="token-monitor" id="tokenStatus">
+        <strong>Current Token Status:</strong> <span id="tokenInfo">Unknown</span>
+    </div>
+    
+    <div id="logs"></div>
+    <div id="apiResults" class="api-grid"></div>
+    
+    <script>
+    let logCounter = 0;
+    
+    function updateTokenStatus() {
+        const token = localStorage.getItem('authToken');
+        const info = document.getElementById('tokenInfo');
+        
+        if (!token) {
+            info.innerHTML = '<span style="color: red;">No Token</span>';
+        } else {
+            try {
+                const parts = token.split('.');
+                const payload = JSON.parse(atob(parts[1]));
+                const now = Math.floor(Date.now() / 1000);
+                const exp = payload.exp;
+                const isExpired = now > exp;
+                
+                info.innerHTML = `
+                    <span style="color: ${isExpired ? 'red' : 'green'};">
+                        ${isExpired ? 'EXPIRED' : 'VALID'} - Expires: ${new Date(exp * 1000).toLocaleString()}
+                    </span><br>
+                    <small>Token: ${token.substring(0, 80)}...</small>
+                `;
+            } catch (e) {
+                info.innerHTML = '<span style="color: orange;">Invalid Token Format</span>';
+            }
+        }
+    }
+    
+    function log(message, type = 'info') {
+        const div = document.createElement('div');
+        div.className = `log ${type}`;
+        div.innerHTML = `[${++logCounter}] ${new Date().toLocaleTimeString()}: ${message}`;
+        document.getElementById('logs').appendChild(div);
+        updateTokenStatus();
+    }
+    
+    function clearEverything() {
+        localStorage.clear();
+        sessionStorage.clear();
+        document.getElementById('logs').innerHTML = '';
+        document.getElementById('apiResults').innerHTML = '';
+        logCounter = 0;
+        updateTokenStatus();
+        log('All storage cleared', 'info');
+    }
+    
+    async function testSingleAPI(name, url) {
+        const tokenBefore = localStorage.getItem('authToken');
+        log(`Testing ${name}...`, 'info');
+        
+        const resultDiv = document.createElement('div');
+        resultDiv.className = 'api-test';
+        resultDiv.innerHTML = `<strong>${name}</strong><br>Testing...`;
+        document.getElementById('apiResults').appendChild(resultDiv);
+        
+        try {
+            const response = await fetch(url, {
+                headers: tokenBefore ? { 'Authorization': `Bearer ${tokenBefore}` } : {},
+                credentials: 'include'
+            });
+            
+            const tokenAfter = localStorage.getItem('authToken');
+            const data = await response.json();
+            
+            const tokenChanged = tokenBefore !== tokenAfter;
+            const tokenCleared = tokenBefore && !tokenAfter;
+            
+            let status = `${response.status} ${response.statusText}`;
+            let tokenStatus = 'Unchanged';
+            
+            if (tokenCleared) {
+                tokenStatus = '🚨 CLEARED';
+                log(`🚨 TOKEN CLEARED by ${name}!`, 'error');
+            } else if (tokenChanged) {
+                tokenStatus = '⚠️ CHANGED';
+                log(`⚠️ Token changed by ${name}`, 'warning');
+            } else {
+                tokenStatus = '✅ Preserved';
+            }
+            
+            resultDiv.innerHTML = `
+                <strong>${name}</strong><br>
+                Status: <span style="color: ${response.ok ? 'green' : 'red'}">${status}</span><br>
+                Token: <span style="color: ${tokenCleared ? 'red' : tokenChanged ? 'orange' : 'green'}">${tokenStatus}</span><br>
+                <small>Data: ${JSON.stringify(data).substring(0, 100)}...</small>
+            `;
+            
+            log(`${name}: ${status}, Token: ${tokenStatus}`, response.ok ? 'success' : 'error');
+            
+        } catch (error) {
+            const tokenAfter = localStorage.getItem('authToken');
+            const tokenCleared = tokenBefore && !tokenAfter;
+            
+            if (tokenCleared) {
+                log(`🚨 TOKEN CLEARED by error in ${name}!`, 'error');
+            }
+            
+            resultDiv.innerHTML = `
+                <strong>${name}</strong><br>
+                Status: <span style="color: red">Error: ${error.message}</span><br>
+                Token: <span style="color: ${tokenCleared ? 'red' : 'green'}">${tokenCleared ? '🚨 CLEARED' : '✅ Preserved'}</span>
+            `;
+            
+            log(`${name} error: ${error.message}`, 'error');
+        }
+    }
+    
+    async function startInvestigation() {
+        document.getElementById('logs').innerHTML = '';
+        document.getElementById('apiResults').innerHTML = '';
+        logCounter = 0;
+        
+        log('=== FRONTEND TOKEN INVESTIGATION STARTED ===', 'info');
+        
+        // Step 1: Check existing token
+        const existingToken = localStorage.getItem('authToken');
+        log(`Existing token: ${existingToken ? 'EXISTS (checking expiry)' : 'NONE'}`, existingToken ? 'warning' : 'info');
+        
+        if (existingToken) {
+            try {
+                const parts = existingToken.split('.');
+                const payload = JSON.parse(atob(parts[1]));
+                const now = Math.floor(Date.now() / 1000);
+                const isExpired = now > payload.exp;
+                log(`Existing token expired: ${isExpired ? 'YES' : 'NO'}`, isExpired ? 'error' : 'success');
+                
+                if (isExpired) {
+                    log('This explains the "jwt expired" errors in server logs!', 'error');
+                }
+            } catch (e) {
+                log('Could not decode existing token', 'error');
+            }
+        }
+        
+        // Step 2: Get fresh token
+        log('Getting fresh token...', 'info');
+        
+        try {
+            const loginResp = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: 'test@newwimp.app', password: 'password123' })
+            });
+            
+            const loginData = await loginResp.json();
+            
+            if (loginData.success && loginData.token) {
+                localStorage.setItem('authToken', loginData.token);
+                log('Fresh token obtained and stored', 'success');
+                updateTokenStatus();
+            } else {
+                log('Failed to get fresh token', 'error');
+                return;
+            }
+        } catch (error) {
+            log(`Login failed: ${error.message}`, 'error');
+            return;
+        }
+        
+        // Step 3: Test APIs that were failing
+        log('Testing APIs that were showing 401 errors...', 'info');
+        
+        const testAPIs = [
+            { name: 'Auth Me', url: '/api/auth/me' },
+            { name: 'Financial Overview', url: '/api/financial/overview' },
+            { name: 'Financial Budget', url: '/api/financial/budget' },
+            { name: 'Subscription Status', url: '/api/subscription/status' },
+            { name: 'Ingredients', url: '/api/ingredients' },
+            { name: 'Shopping', url: '/api/shopping' }
+        ];
+        
+        for (const api of testAPIs) {
+            await testSingleAPI(api.name, api.url);
+            await new Promise(resolve => setTimeout(resolve, 500)); // Small delay
+        }
+        
+        // Final summary
+        const finalToken = localStorage.getItem('authToken');
+        log('=== INVESTIGATION COMPLETE ===', 'info');
+        log(`Final token status: ${finalToken ? 'EXISTS' : 'MISSING'}`, finalToken ? 'success' : 'error');
+        updateTokenStatus();
+    }
+    
+    // Monitor token changes
+    setInterval(updateTokenStatus, 2000);
+    updateTokenStatus();
+    </script>
+</body>
+</html>

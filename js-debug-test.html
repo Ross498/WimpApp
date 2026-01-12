@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JavaScript Bundle Debug Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .pass { background: #d4edda; }
+        .fail { background: #f8d7da; }
+        .loading { background: #fff3cd; }
+    </style>
+</head>
+<body>
+    <h1>JavaScript Bundle Execution Test</h1>
+    <div id="results">
+        <div class="test loading">Testing JavaScript bundle execution...</div>
+    </div>
+
+    <script>
+        console.log('🔍 DEBUG: Test script starting');
+        
+        const results = document.getElementById('results');
+        let testResults = [];
+        
+        // Test 1: Can we access the bundle?
+        console.log('🔍 DEBUG: Testing bundle access');
+        fetch('/assets/index.js')
+            .then(response => {
+                console.log('🔍 DEBUG: Bundle response status:', response.status);
+                testResults.push({
+                    name: 'Bundle Access',
+                    status: response.ok ? 'pass' : 'fail',
+                    details: `HTTP ${response.status}`
+                });
+                return response.text();
+            })
+            .then(bundleContent => {
+                console.log('🔍 DEBUG: Bundle content length:', bundleContent.length);
+                
+                // Test 2: Does bundle contain React?
+                const hasReact = bundleContent.includes('React') || bundleContent.includes('react');
+                testResults.push({
+                    name: 'React in Bundle',
+                    status: hasReact ? 'pass' : 'fail',
+                    details: hasReact ? 'React found' : 'React not found'
+                });
+                
+                // Test 3: Does bundle contain our main code?
+                const hasMain = bundleContent.includes('main') || bundleContent.includes('App');
+                testResults.push({
+                    name: 'Main Code in Bundle', 
+                    status: hasMain ? 'pass' : 'fail',
+                    details: hasMain ? 'Main code found' : 'Main code missing'
+                });
+                
+                // Test 4: Try to execute bundle manually
+                console.log('🔍 DEBUG: Attempting manual bundle execution');
+                try {
+                    const script = document.createElement('script');
+                    script.src = '/assets/index.js';
+                    script.onload = () => {
+                        console.log('✅ DEBUG: Bundle loaded successfully');
+                        testResults.push({
+                            name: 'Bundle Execution',
+                            status: 'pass',
+                            details: 'Bundle executed without errors'
+                        });
+                        updateResults();
+                    };
+                    script.onerror = (error) => {
+                        console.error('❌ DEBUG: Bundle execution failed:', error);
+                        testResults.push({
+                            name: 'Bundle Execution',
+                            status: 'fail',
+                            details: 'Bundle execution failed: ' + error
+                        });
+                        updateResults();
+                    };
+                    document.head.appendChild(script);
+                } catch (error) {
+                    console.error('❌ DEBUG: Script creation failed:', error);
+                    testResults.push({
+                        name: 'Bundle Execution',
+                        status: 'fail',
+                        details: 'Script creation failed: ' + error.message
+                    });
+                    updateResults();
+                }
+            })
+            .catch(error => {
+                console.error('❌ DEBUG: Bundle fetch failed:', error);
+                testResults.push({
+                    name: 'Bundle Access',
+                    status: 'fail',
+                    details: 'Fetch failed: ' + error.message
+                });
+                updateResults();
+            });
+        
+        function updateResults() {
+            let html = '';
+            testResults.forEach(test => {
+                html += `<div class="test ${test.status}">
+                    <strong>${test.name}:</strong> ${test.status.toUpperCase()}
+                    <br><small>${test.details}</small>
+                </div>`;
+            });
+            results.innerHTML = html;
+        }
+        
+        // Test 5: Check if React root div exists
+        setTimeout(() => {
+            const rootDiv = document.getElementById('root');
+            if (rootDiv) {
+                console.log('🔍 DEBUG: Root div content:', rootDiv.innerHTML.length > 0 ? 'HAS CONTENT' : 'EMPTY');
+                testResults.push({
+                    name: 'React Root Population',
+                    status: rootDiv.innerHTML.length > 0 ? 'pass' : 'fail',
+                    details: rootDiv.innerHTML.length > 0 ? 'Root div has content' : 'Root div is empty'
+                });
+            }
+            updateResults();
+        }, 3000);
+        
+    </script>
+    
+    <!-- Add the root div for testing -->
+    <div id="root" style="border: 2px solid red; margin: 20px 0; min-height: 100px; padding: 10px;">
+        <p style="color: red;">This is the React root div - should be populated by JavaScript</p>
+    </div>
+</body>
+</html>

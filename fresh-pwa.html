@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIMP Fresh PWA Install</title>
+    <meta name="description" content="Fresh install of WIMP Kitchen Companion to bypass cache issues" />
+    <meta name="theme-color" content="#1E293B" />
+    <link rel="manifest" href="/manifest-fresh.json" />
+    <link rel="icon" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <style>
+        body {
+            font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+            color: white;
+            line-height: 1.6;
+            text-align: center;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { color: #F59E0B; font-size: 2.5rem; margin-bottom: 1rem; }
+        .app-icon { 
+            width: 120px; 
+            height: 120px; 
+            margin: 2rem auto; 
+            display: block; 
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .install-btn {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            color: white;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px 10px;
+            box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+            transition: transform 0.2s;
+        }
+        .install-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
+        }
+        .app-link {
+            color: #CBD5E1;
+            text-decoration: none;
+            padding: 12px 24px;
+            border: 2px solid #CBD5E1;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 10px;
+            transition: all 0.2s;
+        }
+        .app-link:hover {
+            background: #CBD5E1;
+            color: #1E293B;
+        }
+        .feature {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid #22c55e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/icons/icon-192x192.png" alt="WIMP Icon" class="app-icon">
+        <h1>🔄 Fresh PWA Install</h1>
+        <p style="font-size: 1.2rem; margin-bottom: 2rem;">
+            This is a fresh PWA installation to bypass any cache issues with the original WIMP app.
+        </p>
+        
+        <div id="status" class="status">
+            Ready for fresh PWA installation...
+        </div>
+        
+        <button onclick="installFreshApp()" class="install-btn">
+            📱 Install Fresh PWA
+        </button>
+        
+        <p style="margin: 20px 0;">
+            <a href="/app-fresh" class="app-link">🍳 Launch Fresh App</a>
+        </p>
+        
+        <div class="feature">
+            <h3 style="color: #F59E0B;">🆕 What's Different?</h3>
+            <p>• Fresh service worker (no cache conflicts)</p>
+            <p>• New PWA manifest and configuration</p>
+            <p>• Direct React app loading</p>
+            <p>• Bypass any existing PWA cache issues</p>
+        </div>
+        
+        <div class="feature">
+            <h3 style="color: #F59E0B;">📋 Installation Steps</h3>
+            <p>1. Click "Install Fresh PWA" button above</p>
+            <p>2. Allow PWA installation when prompted</p>
+            <p>3. Fresh app will be added to home screen</p>
+            <p>4. Launch from home screen - no black screen!</p>
+        </div>
+        
+        <div style="margin-top: 30px; padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid #ef4444;">
+            <h3 style="color: #F87171;">⚠️ Still Having Issues?</h3>
+            <p>If you still see a black screen:</p>
+            <p>1. <a href="/clear-pwa-cache" style="color: #F59E0B;">Clear all PWA cache</a></p>
+            <p>2. Remove any existing WIMP apps from home screen</p>
+            <p>3. Close all browser tabs and restart browser</p>
+            <p>4. Try this fresh install again</p>
+        </div>
+    </div>
+
+    <script>
+        let deferredPrompt;
+        const statusDiv = document.getElementById('status');
+        
+        function updateStatus(message, type = 'success') {
+            statusDiv.innerHTML = message;
+            statusDiv.className = type === 'success' ? 'status' : 'status error';
+        }
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            updateStatus('✅ Fresh PWA ready for installation!', 'success');
+            console.log('Fresh PWA install prompt ready');
+        });
+        
+        function installFreshApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        updateStatus('🎉 Fresh PWA installed successfully! Check your home screen.', 'success');
+                        console.log('User accepted fresh PWA install');
+                    } else {
+                        updateStatus('❌ Fresh PWA installation cancelled', 'error');
+                        console.log('User declined fresh PWA install');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                updateStatus('ℹ️ PWA already installed or not supported. Try "Launch Fresh App" link above.', 'success');
+                console.log('No install prompt available');
+            }
+        }
+        
+        // Register fresh service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw-fresh.js')
+                .then(registration => {
+                    console.log('Fresh SW registered:', registration);
+                    updateStatus('✅ Fresh service worker registered successfully!', 'success');
+                })
+                .catch(error => {
+                    console.log('Fresh SW registration failed:', error);
+                    updateStatus('❌ Service worker registration failed', 'error');
+                });
+        }
+        
+        // Check if we're running as PWA
+        window.addEventListener('load', () => {
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                updateStatus('✅ Running as installed PWA!', 'success');
+            }
+        });
+    </script>
+</body>
+</html>

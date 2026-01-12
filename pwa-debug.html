@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>PWA Debug Tool - WIMP</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+        }
+        .status-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4ade80;
+        }
+        .status-item.error {
+            border-left-color: #ef4444;
+        }
+        .status-item.warning {
+            border-left-color: #f59e0b;
+        }
+        .button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        .button:hover { transform: scale(1.05); }
+        .console { 
+            background: rgba(0,0,0,0.3); 
+            padding: 15px; 
+            border-radius: 8px; 
+            font-family: monospace; 
+            font-size: 12px; 
+            max-height: 200px; 
+            overflow-y: auto; 
+            margin: 15px 0;
+            white-space: pre-wrap;
+        }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 PWA Debug Tool</h1>
+        <p>Diagnose PWA-specific initialization and asset loading issues</p>
+        
+        <div id="pwa-status"></div>
+        
+        <div class="grid">
+            <button class="button" onclick="runPWADiagnostic()">🔍 Run PWA Diagnostic</button>
+            <button class="button" onclick="testAssetLoading()">📦 Test Asset Loading</button>
+            <button class="button" onclick="clearPWACaches()">🧹 Clear PWA Caches</button>
+            <button class="button" onclick="testStorageAccess()">💾 Test Storage Access</button>
+        </div>
+        
+        <div id="console-output" class="console">Ready for PWA diagnostics...</div>
+        
+        <div class="grid">
+            <button class="button" onclick="forceAppReload()">🔄 Force App Reload</button>
+            <button class="button" onclick="window.location.href='/app?pwa=true&debug=1'">🚀 Launch PWA Mode</button>
+        </div>
+    </div>
+
+    <script>
+        let consoleOutput = document.getElementById('console-output');
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            consoleOutput.textContent += `[${timestamp}] ${message}\n`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(items) {
+            const statusDiv = document.getElementById('pwa-status');
+            statusDiv.innerHTML = items.map(item => 
+                `<div class="status-item ${item.type}">
+                    <strong>${item.label}:</strong> ${item.value}
+                </div>`
+            ).join('');
+        }
+        
+        async function runPWADiagnostic() {
+            log('🔍 Starting PWA diagnostic...');
+            
+            const diagnostic = {
+                // PWA Detection
+                isStandalone: window.matchMedia('(display-mode: standalone)').matches,
+                isIOSStandalone: window.navigator.standalone,
+                hasServiceWorker: 'serviceWorker' in navigator,
+                
+                // URL and referrer analysis
+                currentURL: window.location.href,
+                referrer: document.referrer,
+                urlParams: window.location.search,
+                
+                // Storage access
+                localStorageAvailable: false,
+                sessionStorageAvailable: false,
+                
+                // Network status
+                isOnline: navigator.onLine,
+                
+                // User agent
+                userAgent: navigator.userAgent,
+                platform: navigator.platform
+            };
+            
+            // Test storage access
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                diagnostic.localStorageAvailable = true;
+            } catch (e) {
+                log(`❌ localStorage access failed: ${e.message}`);
+            }
+            
+            try {
+                sessionStorage.setItem('test', 'test');
+                sessionStorage.removeItem('test');
+                diagnostic.sessionStorageAvailable = true;
+            } catch (e) {
+                log(`❌ sessionStorage access failed: ${e.message}`);
+            }
+            
+            // Display results
+            const statusItems = [
+                { label: 'PWA Mode (standalone)', value: diagnostic.isStandalone ? '✅ Active' : '❌ Not detected', type: diagnostic.isStandalone ? 'success' : 'warning' },
+                { label: 'iOS Standalone', value: diagnostic.isIOSStandalone ? '✅ Active' : '❌ Not detected', type: diagnostic.isIOSStandalone ? 'success' : 'info' },
+                { label: 'Service Worker Support', value: diagnostic.hasServiceWorker ? '✅ Available' : '❌ Not supported', type: diagnostic.hasServiceWorker ? 'success' : 'error' },
+                { label: 'localStorage', value: diagnostic.localStorageAvailable ? '✅ Working' : '❌ Failed', type: diagnostic.localStorageAvailable ? 'success' : 'error' },
+                { label: 'sessionStorage', value: diagnostic.sessionStorageAvailable ? '✅ Working' : '❌ Failed', type: diagnostic.sessionStorageAvailable ? 'success' : 'error' },
+                { label: 'Network Status', value: diagnostic.isOnline ? '✅ Online' : '❌ Offline', type: diagnostic.isOnline ? 'success' : 'warning' },
+            ];
+            
+            updateStatus(statusItems);
+            
+            log('📊 PWA Diagnostic Results:');
+            log(`   Standalone Mode: ${diagnostic.isStandalone}`);
+            log(`   iOS Standalone: ${diagnostic.isIOSStandalone}`);
+            log(`   Current URL: ${diagnostic.currentURL}`);
+            log(`   Referrer: ${diagnostic.referrer || 'None'}`);
+            log(`   URL Params: ${diagnostic.urlParams || 'None'}`);
+            log(`   User Agent: ${diagnostic.userAgent}`);
+            log(`   Platform: ${diagnostic.platform}`);
+            log('✅ PWA diagnostic completed');
+        }
+        
+        async function testAssetLoading() {
+            log('📦 Testing asset loading...');
+            
+            const assets = [
+                '/assets/index.css',
+                '/assets/index.js',
+                '/assets/apiService.js'
+            ];
+            
+            for (const asset of assets) {
+                try {
+                    const response = await fetch(asset, { 
+                        method: 'HEAD',
+                        cache: 'no-cache'
+                    });
+                    log(`${response.ok ? '✅' : '❌'} ${asset}: ${response.status} ${response.statusText} (${response.headers.get('content-type') || 'no content-type'})`);
+                } catch (error) {
+                    log(`❌ ${asset}: Failed to fetch - ${error.message}`);
+                }
+            }
+        }
+        
+        async function clearPWACaches() {
+            log('🧹 Clearing PWA caches...');
+            
+            try {
+                // Clear all caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (const name of cacheNames) {
+                        await caches.delete(name);
+                        log(`🗑️ Cleared cache: ${name}`);
+                    }
+                }
+                
+                // Clear storage
+                try {
+                    localStorage.clear();
+                    log('🗑️ Cleared localStorage');
+                } catch (e) {
+                    log(`⚠️ Could not clear localStorage: ${e.message}`);
+                }
+                
+                try {
+                    sessionStorage.clear();
+                    log('🗑️ Cleared sessionStorage');
+                } catch (e) {
+                    log(`⚠️ Could not clear sessionStorage: ${e.message}`);
+                }
+                
+                // Unregister service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                        log('🗑️ Unregistered service worker');
+                    }
+                }
+                
+                log('✅ PWA cache clearing completed');
+                
+            } catch (error) {
+                log(`❌ Cache clearing failed: ${error.message}`);
+            }
+        }
+        
+        async function testStorageAccess() {
+            log('💾 Testing storage access timing...');
+            
+            // Test immediate access
+            try {
+                localStorage.setItem('immediate_test', 'test');
+                localStorage.removeItem('immediate_test');
+                log('✅ Immediate localStorage access: Working');
+            } catch (e) {
+                log(`❌ Immediate localStorage access: Failed - ${e.message}`);
+            }
+            
+            // Test delayed access (PWA scenario)
+            setTimeout(() => {
+                try {
+                    localStorage.setItem('delayed_test', 'test');
+                    localStorage.removeItem('delayed_test');
+                    log('✅ Delayed localStorage access (300ms): Working');
+                } catch (e) {
+                    log(`❌ Delayed localStorage access: Failed - ${e.message}`);
+                }
+            }, 300);
+        }
+        
+        function forceAppReload() {
+            log('🔄 Force reloading app with cache busting...');
+            const timestamp = Date.now();
+            window.location.href = `/app?v=${timestamp}&pwa=true&force_reload=true`;
+        }
+        
+        // Auto-run diagnostic on load
+        window.addEventListener('load', () => {
+            setTimeout(runPWADiagnostic, 500);
+        });
+    </script>
+</body>
+</html>
