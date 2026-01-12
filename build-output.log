@@ -1,0 +1,14 @@
+
+> wimp-kitchen-companion@1.0.0 build
+> vite build
+
+vite v5.4.19 building for production...
+transforming...
+✓ 1745 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html              1.53 kB │ gzip:   0.58 kB
+dist/assets/index.css        1.36 kB │ gzip:   0.52 kB
+dist/assets/apiService.js    2.43 kB │ gzip:   0.90 kB
+dist/assets/index.js       732.84 kB │ gzip: 174.31 kB
+✓ built in 7.94s

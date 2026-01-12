@@ -1,0 +1,70 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>React Execution Diagnostic</title>
+</head>
+<body>
+    <h1>🧪 React Execution Diagnostic</h1>
+    <div id="output"></div>
+    <div id="react-root"></div>
+    
+    <script>
+        console.log('🧪 STAGE 1: Basic JavaScript execution');
+        document.getElementById('output').innerHTML = '<p>✅ Basic JavaScript: Working</p>';
+        
+        // Test if React bundle can be imported
+        console.log('🧪 STAGE 2: Attempting to load React bundle...');
+        
+        try {
+            import('/assets/index.js')
+                .then((module) => {
+                    console.log('🧪 STAGE 3: React bundle loaded successfully');
+                    document.getElementById('output').innerHTML += '<p style="color: green;">✅ React Bundle: Loaded</p>';
+                    
+                    // Check if React actually tries to mount
+                    const rootElement = document.getElementById('react-root');
+                    if (rootElement) {
+                        console.log('🧪 STAGE 4: React root element found, checking for mounting...');
+                        
+                        // Watch for React mounting
+                        const observer = new MutationObserver((mutations) => {
+                            mutations.forEach((mutation) => {
+                                if (mutation.addedNodes.length > 0) {
+                                    console.log('🧪 STAGE 5: React DOM changes detected - React is mounting!');
+                                    document.getElementById('output').innerHTML += '<p style="color: blue;">✅ React Mounting: Detected</p>';
+                                }
+                            });
+                        });
+                        
+                        observer.observe(rootElement, { childList: true, subtree: true });
+                        
+                        setTimeout(() => {
+                            if (rootElement.children.length === 0) {
+                                console.log('❌ STAGE 5: React failed to mount after 3 seconds');
+                                document.getElementById('output').innerHTML += '<p style="color: red;">❌ React Mounting: Failed</p>';
+                            }
+                        }, 3000);
+                    }
+                })
+                .catch((error) => {
+                    console.log('❌ STAGE 3: React bundle failed to load:', error);
+                    document.getElementById('output').innerHTML += '<p style="color: red;">❌ React Bundle: ' + error.message + '</p>';
+                });
+        } catch (error) {
+            console.log('❌ STAGE 2: Import failed:', error);
+            document.getElementById('output').innerHTML += '<p style="color: red;">❌ Import Error: ' + error.message + '</p>';
+        }
+        
+        // Test authentication localStorage
+        console.log('🧪 CHECKING AUTH STORAGE:');
+        const token = localStorage.getItem('authToken');
+        const user = localStorage.getItem('user');
+        console.log('Token:', token ? token.substring(0, 20) + '...' : 'MISSING');
+        console.log('User:', user ? 'PRESENT' : 'MISSING');
+        
+        document.getElementById('output').innerHTML += '<p>🔐 Auth Token: ' + (token ? 'PRESENT' : 'MISSING') + '</p>';
+        document.getElementById('output').innerHTML += '<p>👤 User Data: ' + (user ? 'PRESENT' : 'MISSING') + '</p>';
+    </script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Viewport for proper PWA scaling - prevent zoom on mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>WIMP Kitchen Companion</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/app-icon-pan-egg.png" />
+    <link rel="apple-touch-icon" href="/app-icon-pan-egg.png" />
+    <meta name="theme-color" content="#22c55e" />
+    <meta name="background-color" content="#22c55e" />
+    
+    <!-- iOS PWA Full Screen Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="WIMP" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="WIMP" />
+
+    <!-- 🔐 SIMPLE JWT CONSOLE SANITIZER: Architect's Precise Solution -->
+    <script>
+    if (!window.__JWT_SANITIZER_INSTALLED__) {
+      window.__JWT_SANITIZER_INSTALLED__ = true;
+      
+      const originalConsole = { ...console };
+      const jwtPattern = /eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/g;
+      const tokenFieldPattern = /("token(?:Start|End|)"\s*:\s*)"[^"]+"/g;
+      const bearerPattern = /(Authorization:\s*Bearer\s+)[^\s,}]+/g;
+      
+      const deepSanitize = (obj, visited = new WeakSet()) => {
+        if (obj === null || typeof obj !== 'object') {
+          return typeof obj === 'string' ? 
+            obj.replace(jwtPattern, '[JWT-REDACTED]')
+               .replace(tokenFieldPattern, '$1"[REDACTED]"')
+               .replace(bearerPattern, '$1[REDACTED]') : obj;
+        }
+        if (visited.has(obj)) return '[Circular]';
+        if (obj instanceof Error) return obj; // Preserve Error objects
+        
+        visited.add(obj);
+        const result = Array.isArray(obj) ? [] : {};
+        for (const key in obj) {
+          if (obj.hasOwnProperty(key)) {
+            result[key] = deepSanitize(obj[key], visited);
+          }
+        }
+        return result;
+      };
+      
+      ['log', 'info', 'warn', 'error', 'debug', 'trace', 'table', 'group', 'groupCollapsed'].forEach(method => {
+        console[method] = (...args) => {
+          const sanitized = args.map(arg => deepSanitize(arg));
+          originalConsole[method](...sanitized);
+        };
+      });
+      
+      console.log('🔐 JWT SANITIZER: Installed successfully');
+    }
+    </script>
+
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+
+
+  </body>
+</html>

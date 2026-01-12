@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal JS Test</title>
+</head>
+<body>
+    <h1>JavaScript Test</h1>
+    <div id="output">Loading...</div>
+    
+    <script>
+        console.log('MINIMAL TEST: JavaScript working');
+        document.getElementById('output').innerHTML = 'JavaScript is working!';
+        
+        // Test fetch
+        fetch('/api/auth/me')
+            .then(r => {
+                console.log('MINIMAL TEST: Fetch response:', r.status);
+                document.getElementById('output').innerHTML += '<br>Fetch: ' + r.status;
+            })
+            .catch(e => {
+                console.log('MINIMAL TEST: Fetch error:', e);
+                document.getElementById('output').innerHTML += '<br>Fetch error: ' + e.message;
+            });
+    </script>
+</body>
+</html>
