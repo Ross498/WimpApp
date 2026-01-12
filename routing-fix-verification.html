@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WIMP Routing Fix Verification</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; background: #f9fafb; }
+        .card { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .success { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .error { background: #fef2f2; border-left: 4px solid #ef4444; }
+        .info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin: 5px; }
+        button:hover { background: #2563eb; }
+        .log { background: #1f2937; color: #e5e7eb; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; margin: 10px 0; }
+        h1 { color: #1f2937; text-align: center; }
+        .test-result { padding: 10px; margin: 5px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 WIMP Routing Fix Verification</h1>
+    
+    <div class="card info">
+        <h2>📋 Routing Configuration Test</h2>
+        <p><strong>Issue Fixed:</strong> Server was serving from both public/ and client/dist/ directories causing conflicts</p>
+        <p><strong>Solution:</strong> Prioritized client/dist/ (built React files) over public/ directory</p>
+        <ul>
+            <li>✅ Static files now served from client/dist/assets/</li>
+            <li>✅ React routing handled by built index.html</li>
+            <li>✅ No more public/client directory conflicts</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>🧪 Test Suite</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="clearResults()">Clear Results</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="card">
+        <h2>🚀 React App Tests</h2>
+        <button onclick="testReactApp('/')">Test Landing Page (/)</button>
+        <button onclick="testReactApp('/app')">Test App Route (/app)</button>
+        <button onclick="testReactApp('/meals')">Test Meals Route (/meals)</button>
+        <button onclick="window.open('/auth-flow-test.html', '_blank')">Test Authentication Flow</button>
+    </div>
+
+    <div class="card">
+        <h2>📂 Static Asset Tests</h2>
+        <button onclick="testStaticAsset('/assets/index.js')">Test React Bundle (index.js)</button>
+        <button onclick="testStaticAsset('/assets/index.css')">Test CSS Bundle (index.css)</button>
+        <button onclick="testStaticAsset('/manifest.json')">Test PWA Manifest</button>
+        <button onclick="testStaticAsset('/app-icon-pan-egg.png')">Test App Icon</button>
+    </div>
+
+    <div class="card">
+        <h2>📊 Test Log</h2>
+        <div id="testLog" class="log">Ready to run routing tests...<br>Click "Run All Tests" to start comprehensive verification.</div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('testLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const typeIcon = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            logDiv.innerHTML += `<br>${timestamp} ${typeIcon} ${message}`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function addResult(test, status, message) {
+            const resultsDiv = document.getElementById('testResults');
+            const resultClass = status === 'success' ? 'success' : status === 'error' ? 'error' : 'info';
+            resultsDiv.innerHTML += `<div class="test-result ${resultClass}"><strong>${test}:</strong> ${message}</div>`;
+        }
+
+        async function testReactApp(route) {
+            log(`Testing React app route: ${route}`, 'info');
+            
+            try {
+                const response = await fetch(route);
+                log(`React route ${route} response: ${response.status}`, 'info');
+
+                if (response.ok) {
+                    const html = await response.text();
+                    
+                    // Check if it's serving the built React app
+                    const hasReactRoot = html.includes('<div id="root">');
+                    const hasReactBundle = html.includes('/assets/index.js');
+                    const hasTitle = html.includes('WIMP Kitchen Companion');
+                    
+                    if (hasReactRoot && hasReactBundle && hasTitle) {
+                        log(`✅ ${route} serving built React app correctly`, 'success');
+                        addResult(`React Route ${route}`, 'success', 'Serving built React app with correct assets');
+                        return true;
+                    } else {
+                        log(`❌ ${route} not serving built React app (missing elements)`, 'error');
+                        addResult(`React Route ${route}`, 'error', 'Not serving built React app properly');
+                        return false;
+                    }
+                } else {
+                    log(`❌ ${route} returned status ${response.status}`, 'error');
+                    addResult(`React Route ${route}`, 'error', `HTTP ${response.status}`);
+                    return false;
+                }
+            } catch (error) {
+                log(`❌ Error testing ${route}: ${error.message}`, 'error');
+                addResult(`React Route ${route}`, 'error', `Network error: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testStaticAsset(assetPath) {
+            log(`Testing static asset: ${assetPath}`, 'info');
+            
+            try {
+                const response = await fetch(assetPath);
+                log(`Asset ${assetPath} response: ${response.status}`, 'info');
+
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    log(`✅ ${assetPath} served successfully (${contentType})`, 'success');
+                    addResult(`Static Asset ${assetPath}`, 'success', `Served with content-type: ${contentType}`);
+                    return true;
+                } else {
+                    log(`❌ ${assetPath} returned status ${response.status}`, 'error');
+                    addResult(`Static Asset ${assetPath}`, 'error', `HTTP ${response.status}`);
+                    return false;
+                }
+            } catch (error) {
+                log(`❌ Error testing ${assetPath}: ${error.message}`, 'error');
+                addResult(`Static Asset ${assetPath}`, 'error', `Network error: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function runAllTests() {
+            log('🧪 Starting comprehensive routing verification...', 'info');
+            clearResults();
+            
+            let passedTests = 0;
+            let totalTests = 0;
+            
+            // Test React routes
+            const routes = ['/', '/app', '/meals'];
+            for (const route of routes) {
+                totalTests++;
+                if (await testReactApp(route)) passedTests++;
+                await new Promise(resolve => setTimeout(resolve, 100)); // Brief delay
+            }
+            
+            // Test static assets
+            const assets = ['/assets/index.js', '/assets/index.css', '/manifest.json', '/app-icon-pan-egg.png'];
+            for (const asset of assets) {
+                totalTests++;
+                if (await testStaticAsset(asset)) passedTests++;
+                await new Promise(resolve => setTimeout(resolve, 100)); // Brief delay
+            }
+            
+            // Summary
+            const successRate = Math.round((passedTests / totalTests) * 100);
+            log(`📊 Test Summary: ${passedTests}/${totalTests} passed (${successRate}%)`, 'info');
+            
+            if (passedTests === totalTests) {
+                addResult('Overall Status', 'success', `All ${totalTests} tests passed! Routing configuration is working correctly.`);
+                log('🎉 All routing tests PASSED! Server is properly configured.', 'success');
+            } else {
+                addResult('Overall Status', 'error', `${totalTests - passedTests} tests failed. Check individual test results above.`);
+                log(`⚠️ ${totalTests - passedTests} tests failed. Check results for details.`, 'error');
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '';
+        }
+
+        // Auto-run basic test on load
+        window.onload = () => {
+            log('Routing Fix Verification Tool loaded', 'success');
+            log('Server should now serve built React app from client/dist/', 'info');
+        };
+    </script>
+</body>
+</html>

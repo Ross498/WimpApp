@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear All Caches - Comprehensive Reset</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; text-align: center; }
+        .container { max-width: 800px; margin: 0 auto; background: rgba(255,255,255,0.1); padding: 40px; border-radius: 20px; backdrop-filter: blur(10px); }
+        button { padding: 18px 30px; margin: 12px; background: #007bff; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        button:hover { background: #0056b3; transform: translateY(-3px); transition: all 0.3s; }
+        .status { padding: 25px; margin: 20px 0; background: rgba(255,255,255,0.15); border-radius: 10px; font-family: monospace; font-size: 14px; border-left: 5px solid #ffc107; text-align: left; }
+        .success { border-left-color: #28a745; background: rgba(40, 167, 69, 0.2); }
+        .error { border-left-color: #dc3545; background: rgba(220, 53, 69, 0.2); }
+        h1 { color: white; margin-bottom: 10px; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗑️ Comprehensive Cache Reset</h1>
+        <p>Clear all cached data and force fresh application load</p>
+        
+        <button onclick="clearAllCaches()">Clear All Caches</button>
+        <button onclick="clearServiceWorkerCache()">Clear Service Worker</button>
+        <button onclick="clearBrowserCache()">Clear Browser Cache</button>
+        <button onclick="hardReload()">Hard Reload App</button>
+        
+        <div class="status" id="status">
+            Ready to clear all caches and reload fresh application
+        </div>
+    </div>
+
+    <script>
+        async function clearAllCaches() {
+            const status = document.getElementById('status');
+            status.className = 'status';
+            status.innerHTML = 'Clearing all caches...';
+            
+            try {
+                // Clear localStorage
+                localStorage.clear();
+                console.log('✅ localStorage cleared');
+                
+                // Clear sessionStorage  
+                sessionStorage.clear();
+                console.log('✅ sessionStorage cleared');
+                
+                // Clear cookies
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                console.log('✅ Cookies cleared');
+                
+                // Clear Cache Storage
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    console.log('✅ Cache Storage cleared');
+                }
+                
+                // Unregister service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(reg => reg.unregister()));
+                    console.log('✅ Service Workers unregistered');
+                }
+                
+                status.className = 'status success';
+                status.innerHTML = 'All caches cleared successfully! Reloading application...';
+                
+                setTimeout(() => {
+                    window.location.href = '/app?nocache=' + Date.now();
+                }, 2000);
+                
+            } catch (error) {
+                status.className = 'status error';
+                status.innerHTML = 'Error clearing caches: ' + error.message;
+            }
+        }
+        
+        async function clearServiceWorkerCache() {
+            const status = document.getElementById('status');
+            status.innerHTML = 'Clearing service worker cache...';
+            
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(reg => reg.unregister()));
+                    
+                    if ('caches' in window) {
+                        const cacheNames = await caches.keys();
+                        await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    }
+                }
+                
+                status.className = 'status success';
+                status.innerHTML = 'Service Worker cache cleared!';
+            } catch (error) {
+                status.className = 'status error';
+                status.innerHTML = 'Error: ' + error.message;
+            }
+        }
+        
+        function clearBrowserCache() {
+            const status = document.getElementById('status');
+            status.innerHTML = 'Forcing browser cache clear...';
+            
+            // Clear storage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Force reload with cache bypass
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 1000);
+        }
+        
+        function hardReload() {
+            const status = document.getElementById('status');
+            status.innerHTML = 'Performing hard reload...';
+            
+            // Clear everything first
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Force hard reload
+            setTimeout(() => {
+                window.location.href = '/app?v=' + Date.now() + '&nocache=true';
+            }, 500);
+        }
+    </script>
+</body>
+</html>

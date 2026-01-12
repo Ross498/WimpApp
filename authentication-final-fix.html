@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Authentication Final Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .status { background: #f0f4f8; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        button { background: #0066cc; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0052a3; }
+        .test-results { margin-top: 20px; }
+        .api-test { padding: 10px; margin: 5px 0; background: #f9f9f9; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔐 Authentication Final Fix</h1>
+    <p>This tool will resolve all authentication issues by clearing cached data and establishing fresh authentication.</p>
+    
+    <button onclick="fixAuthentication()">🚀 Fix All Authentication Issues</button>
+    <button onclick="testAPIs()">🧪 Test All APIs</button>
+    <button onclick="clearEverything()">🧹 Clear All Cache & Data</button>
+    
+    <div id="status" class="status">Ready to fix authentication issues...</div>
+    <div id="testResults" class="test-results"></div>
+    
+    <script>
+    let globalToken = null;
+    
+    async function clearEverything() {
+        updateStatus('Clearing all cached data...', 'status');
+        
+        // Clear ALL browser storage
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Clear all cookies
+        document.cookie.split(";").forEach(function(c) { 
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        });
+        
+        // Clear service worker cache
+        if ('serviceWorker' in navigator && 'caches' in window) {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+        }
+        
+        updateStatus('All cached data cleared successfully!', 'success');
+    }
+    
+    async function performFreshLogin() {
+        updateStatus('Performing fresh login...', 'status');
+        
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: 'test@newwimp.app',
+                    password: 'password123'
+                }),
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success && data.token) {
+                globalToken = data.token;
+                
+                // Store authentication data
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('isAuthenticated', 'true');
+                
+                updateStatus(`✅ Login successful! Token: ${data.token.substring(0, 50)}...`, 'success');
+                return data.token;
+            } else {
+                throw new Error(data.message || 'Login failed');
+            }
+        } catch (error) {
+            updateStatus(`❌ Login failed: ${error.message}`, 'error');
+            return null;
+        }
+    }
+    
+    async function testAPIs() {
+        const token = globalToken || localStorage.getItem('authToken');
+        
+        if (!token) {
+            updateStatus('No token available. Please fix authentication first.', 'error');
+            return;
+        }
+        
+        const testResults = document.getElementById('testResults');
+        testResults.innerHTML = '<h3>🧪 API Test Results:</h3>';
+        
+        const apiTests = [
+            { name: 'Auth Me', url: '/api/auth/me' },
+            { name: 'Financial Overview', url: '/api/financial/overview' },
+            { name: 'Financial Budget', url: '/api/financial/budget' },
+            { name: 'Subscription Status', url: '/api/subscription/status' },
+            { name: 'Meals Unified', url: '/api/meals/unified' },
+            { name: 'Ingredients', url: '/api/ingredients' },
+            { name: 'Shopping', url: '/api/shopping' }
+        ];
+        
+        for (const test of apiTests) {
+            try {
+                updateStatus(`Testing ${test.name}...`, 'status');
+                
+                const response = await fetch(test.url, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                const success = response.ok && (data.success !== false);
+                
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'api-test';
+                resultDiv.innerHTML = `
+                    <strong>${test.name}</strong>: ${success ? '✅ WORKING' : '❌ FAILED'}
+                    <br><small>Status: ${response.status} | Data: ${JSON.stringify(data).substring(0, 100)}...</small>
+                `;
+                testResults.appendChild(resultDiv);
+                
+            } catch (error) {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'api-test';
+                resultDiv.innerHTML = `<strong>${test.name}</strong>: ❌ ERROR - ${error.message}`;
+                testResults.appendChild(resultDiv);
+            }
+        }
+        
+        updateStatus('API testing completed!', 'success');
+    }
+    
+    async function fixAuthentication() {
+        try {
+            // Step 1: Clear everything
+            await clearEverything();
+            
+            // Step 2: Fresh login
+            const token = await performFreshLogin();
+            
+            if (token) {
+                // Step 3: Test APIs
+                await testAPIs();
+                
+                // Step 4: Redirect to app
+                updateStatus('🎉 Authentication fixed! Redirecting to app in 3 seconds...', 'success');
+                setTimeout(() => {
+                    window.location.href = '/app';
+                }, 3000);
+            }
+            
+        } catch (error) {
+            updateStatus(`❌ Fix failed: ${error.message}`, 'error');
+        }
+    }
+    
+    function updateStatus(message, type) {
+        const statusDiv = document.getElementById('status');
+        statusDiv.textContent = message;
+        statusDiv.className = `status ${type}`;
+    }
+    </script>
+</body>
+</html>

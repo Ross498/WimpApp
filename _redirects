@@ -1,0 +1,4 @@
+# WIMP Kitchen Companion - Netlify/Vercel redirect rules
+/meals /app 301
+/assets/* /assets/:splat 200
+/* /index.html 200

@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Complete Auth Reset - WIMP</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; background: #f0f0f0; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { background: #dc2626; color: white; padding: 15px 30px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin: 10px; }
+        .success { color: #16a34a; font-weight: bold; margin: 20px 0; }
+        .info { background: #f3f4f6; padding: 15px; margin: 15px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Complete Authentication Reset</h1>
+        <p>This tool will completely clear all authentication data and force a fresh login.</p>
+        
+        <div class="info">
+            <h3>Current Auth State:</h3>
+            <div id="authState">Loading...</div>
+        </div>
+        
+        <button class="btn" onclick="resetCompleteAuth()">🔥 Reset All Authentication</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        function checkAuthState() {
+            const state = {
+                localStorage_authToken: localStorage.getItem('authToken') ? 'present' : 'missing',
+                localStorage_user: localStorage.getItem('user') ? 'present' : 'missing',
+                localStorage_isAuth: localStorage.getItem('isAuthenticated') ? 'present' : 'missing',
+                localStorage_tutorial: localStorage.getItem('tutorialCompleted') ? 'present' : 'missing',
+                cookies: document.cookie ? 'present' : 'missing'
+            };
+            
+            document.getElementById('authState').innerHTML = Object.entries(state)
+                .map(([key, val]) => `<div>${key}: ${val}</div>`)
+                .join('');
+        }
+        
+        function resetCompleteAuth() {
+            // Clear localStorage completely
+            localStorage.clear();
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            
+            // Clear all cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            // Clear specific cookies
+            document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+            document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+            
+            document.getElementById('status').innerHTML = '<div class="success">✅ All authentication data cleared! Redirecting to fresh login...</div>';
+            
+            setTimeout(() => {
+                window.location.href = '/app';
+            }, 2000);
+        }
+        
+        // Load current state
+        checkAuthState();
+        setInterval(checkAuthState, 1000);
+    </script>
+</body>
+</html>

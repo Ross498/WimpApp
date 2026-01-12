@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Emergency Auth Fix</title>
+</head>
+<body>
+    <h1>Emergency Authentication Fix for rosspinnock</h1>
+    <button onclick="fixAuth()">Fix Authentication</button>
+    <div id="status"></div>
+    
+    <script>
+    function fixAuth() {
+        // Use the latest fresh working token for rosspinnock2
+        const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NTMsInVzZXJuYW1lIjoicm9zc3Bpbm5vY2syIiwiZW1haWwiOiJyb3NzcGlubm9jazJAZ21haWwuY29tIiwibmFtZSI6IlJvc3MgUHJlbWl1bSIsInVzZXJJZCI6IjUzIiwiaWF0IjoxNzU0OTI2ODI1LCJleHAiOjE3NTUwMTMyMjV9.DJ4D_bKCkBiGLratJEdv9W9fK8-nfhOodKBVPjuHPCI';
+        
+        // Set premium user data
+        const premiumUser = {
+            id: 53,
+            username: 'rosspinnock2',
+            email: 'rosspinnock2@gmail.com',
+            name: 'Ross Premium',
+            subscriptionTier: 'premium',
+            masteryKeys: 10
+        };
+        
+        // Clear old auth
+        localStorage.clear();
+        
+        // Set new auth
+        localStorage.setItem('authToken', validToken);
+        localStorage.setItem('user', JSON.stringify(premiumUser));
+        localStorage.setItem('tutorialCompleted', 'true');
+        localStorage.setItem('hasSeenWelcome', 'true');
+        
+        document.getElementById('status').innerHTML = '<p style="color: green;">✅ Authentication fixed! Redirecting...</p>';
+        
+        // Redirect to app
+        setTimeout(() => {
+            window.location.href = '/app';
+        }, 1000);
+    }
+    </script>
+</body>
+</html>

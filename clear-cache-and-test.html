@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Cache & Test MIME Types</title>
+    <style>
+        body {
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 8px;
+        }
+        .btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            margin: 5px;
+            border-radius: 4px;
+            font-weight: bold;
+            width: 100%;
+            font-size: 16px;
+        }
+        .btn.success {
+            background: #22c55e;
+        }
+        .result {
+            background: #262626;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .success { border-left: 4px solid #22c55e; color: #22c55e; }
+        .error { border-left: 4px solid #ef4444; color: #ef4444; }
+        .warning { border-left: 4px solid #f59e0b; color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Clear Cache & Test MIME Types</h1>
+        <p>This tool clears all cached content and tests if MIME type issues are resolved</p>
+        
+        <button class="btn" onclick="clearAllCaches()">🧹 Clear All Caches</button>
+        <button class="btn success" onclick="testMimeTypes()">🔍 Test MIME Types</button>
+        <button class="btn success" onclick="testPWALaunch()">📱 Test PWA Launch</button>
+        <button class="btn" onclick="forceReload()">🔄 Force Complete Reload</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const results = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        async function clearAllCaches() {
+            log('🧹 Starting comprehensive cache clearing...', 'warning');
+            
+            // Clear localStorage
+            localStorage.clear();
+            log('✅ LocalStorage cleared');
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            log('✅ SessionStorage cleared');
+            
+            // Clear cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            log('✅ Cookies cleared');
+            
+            // Clear service workers
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                    }
+                    log(`✅ ${registrations.length} service workers unregistered`);
+                } catch (error) {
+                    log(`❌ Service worker cleanup error: ${error.message}`, 'error');
+                }
+            }
+            
+            // Clear cache storage
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    log(`✅ ${cacheNames.length} cache storages deleted`);
+                } catch (error) {
+                    log(`❌ Cache storage cleanup error: ${error.message}`, 'error');
+                }
+            }
+            
+            // Clear IndexedDB
+            try {
+                if ('indexedDB' in window) {
+                    const databases = await indexedDB.databases();
+                    await Promise.all(databases.map(db => {
+                        return new Promise((resolve) => {
+                            indexedDB.deleteDatabase(db.name);
+                            resolve();
+                        });
+                    }));
+                    log(`✅ ${databases.length} IndexedDB databases cleared`);
+                }
+            } catch (error) {
+                log(`⚠️ IndexedDB cleanup: ${error.message}`, 'warning');
+            }
+            
+            log('✅ Complete cache clearing finished!', 'success');
+        }
+        
+        async function testMimeTypes() {
+            log('🔍 Testing MIME types with cache-busting...', 'info');
+            
+            const timestamp = Date.now();
+            const assets = [
+                `/assets/index.css?t=${timestamp}`,
+                `/assets/index.js?t=${timestamp}`,
+                `/manifest.json?t=${timestamp}`
+            ];
+            
+            for (const asset of assets) {
+                try {
+                    const response = await fetch(asset, { 
+                        cache: 'no-cache',
+                        headers: {
+                            'Cache-Control': 'no-cache',
+                            'Pragma': 'no-cache'
+                        }
+                    });
+                    
+                    const contentType = response.headers.get('content-type');
+                    const size = response.headers.get('content-length');
+                    
+                    if (response.ok) {
+                        log(`✅ ${asset.split('?')[0]}: ${response.status} - ${contentType} (${size} bytes)`, 'success');
+                        
+                        // Verify content is not HTML
+                        const text = await response.text();
+                        if (text.includes('<!DOCTYPE html>')) {
+                            log(`❌ STILL SERVING HTML for ${asset}!`, 'error');
+                        } else if (asset.includes('.css') && text.includes('@tailwind')) {
+                            log(`✅ Valid CSS content confirmed`, 'success');
+                        } else if (asset.includes('.js') && text.includes('React')) {
+                            log(`✅ Valid JS content confirmed`, 'success');
+                        }
+                    } else {
+                        log(`❌ ${asset}: ${response.status} - ${response.statusText}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ ${asset}: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function testPWALaunch() {
+            log('📱 Testing PWA launch capability...', 'info');
+            
+            // Check if running in PWA mode
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+            log(`PWA standalone mode: ${isPWA}`, isPWA ? 'success' : 'warning');
+            
+            // Test manifest
+            try {
+                const manifestResponse = await fetch('/manifest.json', { cache: 'no-cache' });
+                if (manifestResponse.ok) {
+                    const manifest = await manifestResponse.json();
+                    log(`✅ Manifest loaded: ${manifest.name}`, 'success');
+                    log(`Start URL: ${manifest.start_url}`, 'info');
+                } else {
+                    log(`❌ Manifest failed: ${manifestResponse.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Manifest error: ${error.message}`, 'error');
+            }
+            
+            // Test app route
+            try {
+                const appResponse = await fetch('/app', { cache: 'no-cache' });
+                if (appResponse.ok) {
+                    log(`✅ App route accessible: ${appResponse.status}`, 'success');
+                    const html = await appResponse.text();
+                    const hasCSS = html.includes('assets/index.css');
+                    const hasJS = html.includes('assets/index.js');
+                    log(`CSS link present: ${hasCSS}`, hasCSS ? 'success' : 'error');
+                    log(`JS script present: ${hasJS}`, hasJS ? 'success' : 'error');
+                } else {
+                    log(`❌ App route failed: ${appResponse.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ App route error: ${error.message}`, 'error');
+            }
+        }
+        
+        function forceReload() {
+            log('🔄 Forcing complete page reload...', 'warning');
+            
+            // Clear everything first
+            clearAllCaches().then(() => {
+                setTimeout(() => {
+                    // Force reload with cache clearing
+                    window.location.reload(true);
+                }, 1000);
+            });
+        }
+        
+        // Auto-run on load
+        setTimeout(() => {
+            log('🔧 Cache clearing tool loaded. Click buttons above to test.', 'info');
+        }, 500);
+    </script>
+</body>
+</html>

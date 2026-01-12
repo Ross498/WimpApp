@@ -1,33 +1,63 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Reset WIMP Tutorial</title>
+    <title>Reset Tutorial State - WIMP</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: #1E293B; 
+            color: white; 
+            text-align: center; 
+            padding: 20px; 
+        }
+        button { 
+            background: #F59E0B; 
+            color: white; 
+            border: none; 
+            padding: 16px 32px; 
+            border-radius: 8px; 
+            font-size: 18px; 
+            cursor: pointer; 
+            margin: 16px; 
+        }
+        button:hover { background: #D97706; }
+        .status { margin: 20px 0; padding: 16px; border-radius: 8px; background: rgba(34, 197, 94, 0.2); border: 1px solid #22C55E; }
+    </style>
 </head>
 <body>
-    <h1>Resetting WIMP Tutorial Progress...</h1>
-    <p>This will clear all local data and restart the tutorial.</p>
+    <div>
+        <h1>🎓 Reset Tutorial State</h1>
+        <p>Use this to test the first-time user experience flow</p>
+        
+        <button onclick="resetToFirstTime()">Reset to First-Time User</button>
+        <button onclick="resetToReturningUser()">Reset to Returning User</button>
+        
+        <div id="status"></div>
+    </div>
+
     <script>
-        // Clear all localStorage items related to WIMP
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('tutorialCompleted');
-        localStorage.removeItem('hasVisitedWIMP');
-        
-        // Clear any other cached data
-        localStorage.clear();
-        
-        // Also clear any cookies
-        document.cookie.split(";").forEach(function(c) { 
-            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
-        });
-        
-        console.log('All data cleared - redirecting to fresh app');
-        
-        // Redirect to the app
-        setTimeout(() => {
-            window.location.href = '/app';
-        }, 1000);
+        function showStatus(message) {
+            document.getElementById('status').innerHTML = `<div class="status">${message}</div>`;
+        }
+
+        function resetToFirstTime() {
+            localStorage.clear();
+            sessionStorage.clear();
+            showStatus('✅ Reset to first-time user state. Redirecting to app...');
+            setTimeout(() => {
+                window.location.href = '/app';
+            }, 1000);
+        }
+
+        function resetToReturningUser() {
+            localStorage.clear();
+            sessionStorage.clear();
+            localStorage.setItem('hasVisitedWIMP', 'true');
+            showStatus('✅ Reset to returning user state (no tutorial completion). Redirecting to app...');
+            setTimeout(() => {
+                window.location.href = '/app';
+            }, 2000);
+        }
     </script>
 </body>
 </html>

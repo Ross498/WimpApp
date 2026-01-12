@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Token Behavior Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; }
+        .test { background: #f9f9f9; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #0066cc; }
+        .result { background: #f0f8ff; padding: 10px; margin: 5px 0; font-family: monospace; font-size: 12px; }
+        .error { background: #ffe6e6; border-left-color: #cc0000; }
+        .success { background: #e6ffe6; border-left-color: #00cc00; }
+        button { background: #0066cc; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Frontend Token Behavior Test</h1>
+    <p>This will test if frontend tokens are still being cleared after API failures.</p>
+    
+    <button onclick="runTest()">Run Token Behavior Test</button>
+    <button onclick="clearStorage()">Clear All Storage</button>
+    
+    <div id="results"></div>
+    
+    <script>
+    let testResults = [];
+    
+    function log(message, type = 'info') {
+        testResults.push({message, type, timestamp: new Date().toLocaleTimeString()});
+        updateDisplay();
+    }
+    
+    function updateDisplay() {
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = testResults.map(result => 
+            `<div class="test ${result.type}">
+                <strong>${result.timestamp}</strong>: ${result.message}
+            </div>`
+        ).join('');
+        resultsDiv.scrollTop = resultsDiv.scrollHeight;
+    }
+    
+    function clearStorage() {
+        localStorage.clear();
+        sessionStorage.clear();
+        testResults = [];
+        updateDisplay();
+        log('All storage cleared', 'info');
+    }
+    
+    async function runTest() {
+        testResults = [];
+        log('🧪 Starting frontend token behavior test...', 'info');
+        
+        // Step 1: Login and get token
+        log('Step 1: Performing login...', 'info');
+        try {
+            const loginResponse = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: 'test@newwimp.app',
+                    password: 'password123'
+                })
+            });
+            
+            const loginData = await loginResponse.json();
+            if (loginData.success && loginData.token) {
+                localStorage.setItem('authToken', loginData.token);
+                log(`✅ Login successful, token stored: ${loginData.token.substring(0, 50)}...`, 'success');
+            } else {
+                log(`❌ Login failed: ${loginData.message}`, 'error');
+                return;
+            }
+        } catch (error) {
+            log(`❌ Login error: ${error.message}`, 'error');
+            return;
+        }
+        
+        // Step 2: Check token exists
+        const tokenBefore = localStorage.getItem('authToken');
+        log(`Step 2: Token before API calls: ${tokenBefore ? 'EXISTS' : 'MISSING'}`, tokenBefore ? 'success' : 'error');
+        
+        // Step 3: Make API calls and monitor token
+        const testAPIs = [
+            '/api/financial/overview',
+            '/api/subscription/status', 
+            '/api/ingredients',
+            '/api/shopping'
+        ];
+        
+        for (let i = 0; i < testAPIs.length; i++) {
+            const api = testAPIs[i];
+            log(`Step ${3 + i}: Testing ${api}...`, 'info');
+            
+            const tokenBeforeCall = localStorage.getItem('authToken');
+            log(`Token before call: ${tokenBeforeCall ? 'EXISTS' : 'MISSING'}`, tokenBeforeCall ? 'success' : 'error');
+            
+            try {
+                const response = await fetch(api, {
+                    headers: { 'Authorization': `Bearer ${tokenBeforeCall}` }
+                });
+                
+                const data = await response.json();
+                log(`API response: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const tokenAfterCall = localStorage.getItem('authToken');
+                log(`Token after call: ${tokenAfterCall ? 'EXISTS' : 'MISSING'}`, tokenAfterCall ? 'success' : 'error');
+                
+                // CRITICAL TEST: Check if token was cleared
+                if (tokenBeforeCall && !tokenAfterCall) {
+                    log(`🚨 PROBLEM DETECTED: Token was cleared after ${api} call!`, 'error');
+                } else if (tokenBeforeCall && tokenAfterCall) {
+                    log(`✅ Token preserved after ${api} call`, 'success');
+                } else {
+                    log(`⚠️ Token was already missing before ${api} call`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ API call failed: ${error.message}`, 'error');
+                
+                const tokenAfterError = localStorage.getItem('authToken');
+                if (tokenBefore && !tokenAfterError) {
+                    log(`🚨 PROBLEM: Token cleared after error!`, 'error');
+                } else {
+                    log(`✅ Token preserved after error`, 'success');
+                }
+            }
+        }
+        
+        // Final summary
+        const finalToken = localStorage.getItem('authToken');
+        log(`\n📊 FINAL RESULT: Token ${finalToken ? 'PRESERVED' : 'LOST'}`, finalToken ? 'success' : 'error');
+        
+        if (!finalToken && tokenBefore) {
+            log('🚨 CONCLUSION: Frontend is still clearing tokens erroneously!', 'error');
+        } else if (finalToken) {
+            log('✅ CONCLUSION: Token behavior appears to be fixed!', 'success');
+        }
+    }
+    </script>
+</body>
+</html>

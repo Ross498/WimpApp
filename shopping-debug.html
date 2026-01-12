@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping List Debug Tool</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .debug-section { 
+            background: white; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .error { 
+            color: red; 
+            background: #ffeaea; 
+            padding: 10px; 
+            border-radius: 4px;
+        }
+        .success { 
+            color: green; 
+            background: #eaffea; 
+            padding: 10px; 
+            border-radius: 4px;
+        }
+        .warning { 
+            color: orange; 
+            background: #fff3e0; 
+            padding: 10px; 
+            border-radius: 4px;
+        }
+        .info { 
+            color: blue; 
+            background: #e3f2fd; 
+            padding: 10px; 
+            border-radius: 4px;
+        }
+        pre { 
+            background: #f5f5f5; 
+            padding: 10px; 
+            border-radius: 4px; 
+            overflow: auto;
+            max-height: 300px;
+        }
+        button { 
+            background: #4CAF50; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        .test-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 20px;
+        }
+        .status-indicator { 
+            display: inline-block; 
+            width: 12px; 
+            height: 12px; 
+            border-radius: 50%; 
+            margin-right: 8px;
+        }
+        .status-success { background-color: #4CAF50; }
+        .status-error { background-color: #f44336; }
+        .status-warning { background-color: #ff9800; }
+        .status-pending { background-color: #2196F3; }
+    </style>
+</head>
+<body>
+    <h1>🛒 WIMP Shopping List Debug Tool</h1>
+    <p>Comprehensive testing for subscription gating and shopping list functionality</p>
+    
+    <div class="debug-section">
+        <h2>🔧 Quick Actions</h2>
+        <button onclick="runAllTests()">🚀 Run All Tests</button>
+        <button onclick="testAuth()">🔐 Test Authentication</button>
+        <button onclick="testSubscription()">💎 Test Subscription</button>
+        <button onclick="testShoppingAPI()">🛒 Test Shopping API</button>
+        <button onclick="clearDebugLogs()">🗑️ Clear Logs</button>
+    </div>
+
+    <div class="test-grid">
+        <div class="debug-section">
+            <h2>🔐 Authentication Status</h2>
+            <div id="auth-status">Testing...</div>
+            <pre id="auth-details"></pre>
+        </div>
+
+        <div class="debug-section">
+            <h2>💎 Subscription Status</h2>
+            <div id="subscription-status">Testing...</div>
+            <pre id="subscription-details"></pre>
+        </div>
+
+        <div class="debug-section">
+            <h2>🛒 Shopping List API</h2>
+            <div id="shopping-status">Testing...</div>
+            <pre id="shopping-details"></pre>
+        </div>
+
+        <div class="debug-section">
+            <h2>🎯 Premium Feature Tests</h2>
+            <div id="premium-status">Testing...</div>
+            <pre id="premium-details"></pre>
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h2>📊 Real-Time Debug Logs</h2>
+        <div id="debug-logs"></div>
+    </div>
+
+    <script>
+        let logContainer;
+        
+        function log(message, type = 'info') {
+            if (!logContainer) {
+                logContainer = document.getElementById('debug-logs');
+            }
+            
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const logDiv = document.createElement('div');
+            logDiv.className = type;
+            logDiv.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logContainer.appendChild(logDiv);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(`[SHOPPING DEBUG] ${message}`);
+        }
+
+        function clearDebugLogs() {
+            document.getElementById('debug-logs').innerHTML = '';
+        }
+
+        function updateStatus(elementId, status, indicator = 'pending') {
+            const element = document.getElementById(elementId);
+            const statusClass = `status-${indicator}`;
+            element.innerHTML = `<span class="status-indicator ${statusClass}"></span>${status}`;
+        }
+
+        async function testAuth() {
+            log('🔐 Testing Authentication...', 'info');
+            updateStatus('auth-status', 'Testing authentication...', 'pending');
+
+            try {
+                // Check local storage
+                const token = localStorage.getItem('authToken');
+                const tutorialCompleted = localStorage.getItem('tutorialCompleted');
+                
+                log(`📱 LocalStorage - Token: ${token ? 'Present' : 'Missing'}`, 'info');
+                log(`📱 LocalStorage - Tutorial: ${tutorialCompleted}`, 'info');
+
+                if (!token) {
+                    updateStatus('auth-status', 'No auth token found', 'error');
+                    document.getElementById('auth-details').textContent = 'Authentication token missing from localStorage';
+                    return false;
+                }
+
+                // Test auth status API
+                const response = await fetch('/api/auth/status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const authData = await response.json();
+                
+                if (response.ok && authData.success) {
+                    updateStatus('auth-status', `✅ Authenticated as ${authData.user?.email}`, 'success');
+                    document.getElementById('auth-details').textContent = JSON.stringify(authData, null, 2);
+                    log(`✅ Authentication successful: ${authData.user?.email}`, 'success');
+                    return authData;
+                } else {
+                    updateStatus('auth-status', '❌ Authentication failed', 'error');
+                    document.getElementById('auth-details').textContent = JSON.stringify(authData, null, 2);
+                    log(`❌ Authentication failed: ${authData.message}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                updateStatus('auth-status', '❌ Auth test error', 'error');
+                document.getElementById('auth-details').textContent = error.message;
+                log(`❌ Auth test error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testSubscription() {
+            log('💎 Testing Subscription Status...', 'info');
+            updateStatus('subscription-status', 'Testing subscription...', 'pending');
+
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    updateStatus('subscription-status', '❌ No auth token', 'error');
+                    return false;
+                }
+
+                const response = await fetch('/api/auth/status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    const tier = data.subscriptionTier || 'unknown';
+                    const isPremium = tier === 'premium';
+                    
+                    updateStatus('subscription-status', `${isPremium ? '💎' : '🆓'} ${tier.toUpperCase()} tier`, isPremium ? 'success' : 'warning');
+                    document.getElementById('subscription-details').textContent = JSON.stringify(data, null, 2);
+                    log(`💎 Subscription: ${tier} (Premium: ${isPremium})`, isPremium ? 'success' : 'warning');
+                    
+                    // Test premium features specifically
+                    testPremiumFeatures(isPremium, data);
+                    return data;
+                } else {
+                    updateStatus('subscription-status', '❌ Failed to get subscription', 'error');
+                    document.getElementById('subscription-details').textContent = JSON.stringify(data, null, 2);
+                    log(`❌ Subscription test failed: ${data.message}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                updateStatus('subscription-status', '❌ Subscription test error', 'error');
+                document.getElementById('subscription-details').textContent = error.message;
+                log(`❌ Subscription test error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testPremiumFeatures(isPremium, userData) {
+            log('🎯 Testing Premium Feature Access...', 'info');
+            updateStatus('premium-status', 'Testing premium features...', 'pending');
+
+            const features = [
+                'multiStoreComparison',
+                'aiFinancialAdvisor',
+                'shoppingInsights',
+                'priceOptimization'
+            ];
+
+            let results = {
+                userTier: userData?.subscriptionTier,
+                isPremium: isPremium,
+                features: {}
+            };
+
+            for (const feature of features) {
+                try {
+                    // Simulate premium gating logic
+                    const hasAccess = isPremium;
+                    results.features[feature] = {
+                        hasAccess: hasAccess,
+                        reason: hasAccess ? 'Premium tier' : 'Requires premium'
+                    };
+                    
+                    log(`🎯 ${feature}: ${hasAccess ? '✅ Accessible' : '❌ Blocked'}`, hasAccess ? 'success' : 'warning');
+                } catch (error) {
+                    results.features[feature] = {
+                        hasAccess: false,
+                        reason: `Error: ${error.message}`
+                    };
+                    log(`🎯 ${feature}: ❌ Error - ${error.message}`, 'error');
+                }
+            }
+
+            const accessCount = Object.values(results.features).filter(f => f.hasAccess).length;
+            updateStatus('premium-status', `${accessCount}/${features.length} features accessible`, accessCount === features.length ? 'success' : 'warning');
+            document.getElementById('premium-details').textContent = JSON.stringify(results, null, 2);
+        }
+
+        async function testShoppingAPI() {
+            log('🛒 Testing Shopping List API...', 'info');
+            updateStatus('shopping-status', 'Testing shopping API...', 'pending');
+
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    updateStatus('shopping-status', '❌ No auth token', 'error');
+                    return false;
+                }
+
+                // Test GET /api/shopping
+                const response = await fetch('/api/shopping', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    const itemCount = data.data?.length || 0;
+                    updateStatus('shopping-status', `✅ ${itemCount} shopping items loaded`, 'success');
+                    document.getElementById('shopping-details').textContent = JSON.stringify(data, null, 2);
+                    log(`✅ Shopping API success: ${itemCount} items`, 'success');
+                    
+                    // Test specific shopping list functions
+                    await testShoppingFunctions(token);
+                    return data;
+                } else {
+                    updateStatus('shopping-status', '❌ Shopping API failed', 'error');
+                    document.getElementById('shopping-details').textContent = JSON.stringify(data, null, 2);
+                    log(`❌ Shopping API failed: ${data.message}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                updateStatus('shopping-status', '❌ Shopping API error', 'error');
+                document.getElementById('shopping-details').textContent = error.message;
+                log(`❌ Shopping API error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testShoppingFunctions(token) {
+            log('🔧 Testing Shopping List Functions...', 'info');
+
+            // Test shopping insights (premium feature)
+            try {
+                const insightsResponse = await fetch('/api/shopping/insights', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (insightsResponse.ok) {
+                    log('✅ Shopping insights API accessible', 'success');
+                } else if (insightsResponse.status === 403) {
+                    log('🚫 Shopping insights blocked (premium required)', 'warning');
+                } else {
+                    log('❌ Shopping insights API error', 'error');
+                }
+            } catch (error) {
+                log(`❌ Shopping insights error: ${error.message}`, 'error');
+            }
+
+            // Test AI advisor (premium feature)
+            try {
+                const advisorResponse = await fetch('/api/shopping/ai-advice', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ context: 'test' })
+                });
+                
+                if (advisorResponse.ok) {
+                    log('✅ AI advisor API accessible', 'success');
+                } else if (advisorResponse.status === 403) {
+                    log('🚫 AI advisor blocked (premium required)', 'warning');
+                } else {
+                    log('❌ AI advisor API error', 'error');
+                }
+            } catch (error) {
+                log(`❌ AI advisor error: ${error.message}`, 'error');
+            }
+        }
+
+        async function runAllTests() {
+            clearDebugLogs();
+            log('🚀 Starting comprehensive shopping list debug tests...', 'info');
+            
+            const authResult = await testAuth();
+            if (!authResult) {
+                log('❌ Authentication failed - skipping other tests', 'error');
+                return;
+            }
+
+            const subscriptionResult = await testSubscription();
+            const shoppingResult = await testShoppingAPI();
+            
+            log('✅ All tests completed!', 'success');
+            
+            // Summary
+            if (authResult && subscriptionResult && shoppingResult) {
+                log('🎉 All systems operational!', 'success');
+            } else {
+                log('⚠️ Some issues detected - check results above', 'warning');
+            }
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            log('🔧 Shopping List Debug Tool loaded', 'info');
+            runAllTests();
+        });
+
+        // Monitor for authentication changes
+        setInterval(() => {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                log('⚠️ Auth token disappeared from localStorage!', 'warning');
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

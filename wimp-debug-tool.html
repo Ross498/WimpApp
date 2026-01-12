@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIMP Debug Tool - Fix White Screen</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+            color: #e2e8f0; 
+            padding: 20px; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: rgba(30, 41, 59, 0.95); 
+            border-radius: 16px; 
+            padding: 40px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+        h1 { 
+            color: #f59e0b; 
+            margin-bottom: 30px; 
+            font-size: 2.5em; 
+            text-align: center; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .emergency-notice { 
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); 
+            color: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-bottom: 30px; 
+            font-weight: bold; 
+            border: 2px solid #fca5a5;
+            text-align: center;
+        }
+        .step-box { 
+            background: linear-gradient(135deg, #334155 0%, #475569 100%); 
+            padding: 25px; 
+            border-radius: 12px; 
+            margin: 20px 0; 
+            border-left: 6px solid #f59e0b; 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .big-button { 
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+            color: white; 
+            border: none; 
+            padding: 20px 40px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            margin: 15px 10px 15px 0; 
+            font-size: 18px; 
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        .big-button:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .danger-button { 
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); 
+            color: white; 
+            border: none; 
+            padding: 20px 40px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            margin: 15px 10px 15px 0; 
+            font-size: 18px; 
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        .danger-button:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .success-button { 
+            background: linear-gradient(135deg, #059669 0%, #047857 100%); 
+            color: white; 
+            border: none; 
+            padding: 20px 40px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            margin: 15px 10px 15px 0; 
+            font-size: 18px; 
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        .success-button:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        .results-box { 
+            background: #0f172a; 
+            padding: 25px; 
+            border-radius: 12px; 
+            margin: 25px 0; 
+            max-height: 400px; 
+            overflow-y: auto; 
+            border: 2px solid #475569;
+            font-family: 'Courier New', monospace;
+        }
+        .status-good { color: #10b981; font-weight: bold; }
+        .status-bad { color: #ef4444; font-weight: bold; }
+        .status-warn { color: #f59e0b; font-weight: bold; }
+        .status-info { color: #60a5fa; font-weight: bold; }
+        .url-input { 
+            background: #334155; 
+            color: #e2e8f0; 
+            border: 2px solid #475569; 
+            padding: 15px; 
+            border-radius: 8px; 
+            width: 100%; 
+            margin: 15px 0; 
+            font-size: 16px;
+        }
+        .url-input:focus { 
+            border-color: #3b82f6; 
+            outline: none; 
+        }
+        .instructions { 
+            background: #1e293b; 
+            border: 2px solid #475569; 
+            padding: 20px; 
+            margin: 15px 0; 
+            border-radius: 8px; 
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .step-number { 
+            background: #f59e0b; 
+            color: #000; 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            font-weight: bold; 
+            margin-right: 15px; 
+            display: inline-block;
+        }
+        .quick-fix { 
+            background: linear-gradient(135deg, #059669 0%, #047857 100%); 
+            color: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin: 20px 0; 
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WIMP Debug Tool - Fix White Screen</h1>
+        
+        <div class="emergency-notice">
+            WHITE SCREEN EMERGENCY FIX TOOL
+            <br>This tool will solve your WIMP app white screen issue
+        </div>
+
+        <div class="step-box">
+            <h2><span class="step-number">1</span>Enter Your WIMP App URL</h2>
+            <input type="text" class="url-input" id="wimpUrl" placeholder="Enter your WIMP app URL" value="https://wimpapp.replit.app">
+            <button class="big-button" onclick="testWimpAccess()">TEST WIMP ACCESS</button>
+        </div>
+
+        <div class="step-box">
+            <h2><span class="step-number">2</span>Clear Browser Cache (CRITICAL)</h2>
+            <p>This is the most important step to fix the white screen:</p>
+            <div class="instructions">
+MANUAL METHOD:
+1. Press F12 to open Developer Tools
+2. Go to Application tab
+3. Click "Service Workers" → Unregister ALL
+4. Click "Storage" → "Clear site data"
+5. Press Ctrl+Shift+R to hard refresh
+
+AUTOMATIC METHOD:
+Click the button below to auto-clear everything
+            </div>
+            <button class="danger-button" onclick="clearAllCache()">AUTO-CLEAR ALL CACHE</button>
+            <button class="big-button" onclick="checkCacheStatus()">CHECK CACHE STATUS</button>
+        </div>
+
+        <div class="step-box">
+            <h2><span class="step-number">3</span>Test WIMP Components</h2>
+            <button class="big-button" onclick="testReactApp()">TEST REACT APP</button>
+            <button class="big-button" onclick="testAPIEndpoints()">TEST API ENDPOINTS</button>
+            <button class="big-button" onclick="testJavaScriptBundles()">TEST JAVASCRIPT BUNDLES</button>
+            <button class="big-button" onclick="checkConsoleErrors()">CHECK CONSOLE ERRORS</button>
+        </div>
+
+        <div class="step-box">
+            <h2><span class="step-number">4</span>Complete Fix Sequence</h2>
+            <button class="success-button" onclick="runCompleteFixSequence()">RUN COMPLETE FIX</button>
+            <button class="big-button" onclick="openWimpInNewTab()">OPEN WIMP IN NEW TAB</button>
+        </div>
+
+        <div class="quick-fix">
+            <h3>QUICK FIX: If Still White Screen</h3>
+            <p>1. Try Incognito/Private browsing mode</p>
+            <p>2. Try different browser (Chrome, Firefox, Safari)</p>
+            <p>3. Try from mobile device</p>
+            <button class="big-button" onclick="openIncognitoInstructions()">INCOGNITO INSTRUCTIONS</button>
+        </div>
+
+        <div id="debugResults" class="results-box">
+            <div class="status-info">Debug tool ready. Click buttons above to start testing...</div>
+        </div>
+    </div>
+
+    <script>
+        function logResult(message, status = 'info') {
+            const results = document.getElementById('debugResults');
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = `status-${status}`;
+            
+            results.innerHTML += `
+                <div class="${statusClass}">
+                    [${timestamp}] ${message}
+                </div>
+            `;
+            results.scrollTop = results.scrollHeight;
+        }
+
+        async function testWimpAccess() {
+            const url = document.getElementById('wimpUrl').value;
+            logResult(`Testing WIMP access at: ${url}`, 'info');
+            
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    logResult(`✅ WIMP app is accessible (${response.status})`, 'good');
+                    logResult(`Response content type: ${response.headers.get('content-type')}`, 'info');
+                } else {
+                    logResult(`❌ WIMP app returned error: ${response.status}`, 'bad');
+                }
+            } catch (error) {
+                logResult(`❌ Cannot reach WIMP app: ${error.message}`, 'bad');
+                logResult(`🔧 Try: Check internet connection, try different network`, 'warn');
+            }
+        }
+
+        async function clearAllCache() {
+            logResult('🧹 Starting complete cache clearing...', 'info');
+            
+            try {
+                // Clear service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                        logResult(`✅ Unregistered service worker: ${registration.scope}`, 'good');
+                    }
+                }
+                
+                // Clear all caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (let cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                        logResult(`✅ Deleted cache: ${cacheName}`, 'good');
+                    }
+                }
+                
+                // Clear storage
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                logResult('🎉 ALL CACHE CLEARED! Now hard refresh the page.', 'good');
+                logResult('🔄 Press Ctrl+Shift+R to hard refresh', 'info');
+                
+            } catch (error) {
+                logResult(`❌ Cache clearing error: ${error.message}`, 'bad');
+            }
+        }
+
+        async function checkCacheStatus() {
+            logResult('🔍 Checking cache status...', 'info');
+            
+            try {
+                // Check service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    if (registrations.length === 0) {
+                        logResult('✅ No service workers registered (GOOD)', 'good');
+                    } else {
+                        registrations.forEach(reg => {
+                            logResult(`⚠️ Service worker found: ${reg.scope}`, 'warn');
+                        });
+                    }
+                }
+                
+                // Check caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    if (cacheNames.length === 0) {
+                        logResult('✅ No caches found (GOOD)', 'good');
+                    } else {
+                        cacheNames.forEach(cacheName => {
+                            logResult(`⚠️ Cache found: ${cacheName}`, 'warn');
+                        });
+                    }
+                }
+                
+            } catch (error) {
+                logResult(`❌ Cache check error: ${error.message}`, 'bad');
+            }
+        }
+
+        async function testReactApp() {
+            logResult('🔍 Testing React app...', 'info');
+            
+            // Test React root element
+            const reactRoot = document.getElementById('root');
+            if (reactRoot) {
+                logResult('✅ React root element exists', 'good');
+                if (reactRoot.innerHTML.trim() === '') {
+                    logResult('⚠️ React root is empty - app not mounted', 'warn');
+                } else {
+                    logResult('✅ React root has content - app mounted', 'good');
+                }
+            } else {
+                logResult('❌ React root element not found', 'bad');
+            }
+            
+            // Test React library
+            if (typeof window.React !== 'undefined') {
+                logResult('✅ React library loaded', 'good');
+            } else {
+                logResult('⚠️ React library not detected', 'warn');
+            }
+        }
+
+        async function testAPIEndpoints() {
+            const baseUrl = document.getElementById('wimpUrl').value;
+            const endpoints = ['/api/health', '/api/custom-recipes', '/api/weekly-chef/current'];
+            
+            logResult('🔍 Testing API endpoints...', 'info');
+            
+            for (let endpoint of endpoints) {
+                try {
+                    const response = await fetch(baseUrl + endpoint);
+                    if (response.ok) {
+                        logResult(`✅ ${endpoint}: Working (${response.status})`, 'good');
+                    } else {
+                        logResult(`❌ ${endpoint}: Failed (${response.status})`, 'bad');
+                    }
+                } catch (error) {
+                    logResult(`❌ ${endpoint}: Error - ${error.message}`, 'bad');
+                }
+            }
+        }
+
+        async function testJavaScriptBundles() {
+            logResult('🔍 Testing JavaScript bundles...', 'info');
+            
+            const scripts = document.querySelectorAll('script[src]');
+            const stylesheets = document.querySelectorAll('link[rel="stylesheet"]');
+            
+            logResult(`Found ${scripts.length} JavaScript files`, 'info');
+            logResult(`Found ${stylesheets.length} CSS files`, 'info');
+            
+            if (scripts.length > 0) {
+                logResult('✅ JavaScript bundles present', 'good');
+                
+                // Test loading the first script
+                const firstScript = scripts[0];
+                if (firstScript) {
+                    try {
+                        const response = await fetch(firstScript.src);
+                        if (response.ok) {
+                            logResult(`✅ Main bundle loads successfully`, 'good');
+                        } else {
+                            logResult(`❌ Main bundle failed to load: ${response.status}`, 'bad');
+                        }
+                    } catch (error) {
+                        logResult(`❌ Bundle loading error: ${error.message}`, 'bad');
+                    }
+                }
+            } else {
+                logResult('❌ No JavaScript bundles found', 'bad');
+            }
+        }
+
+        function checkConsoleErrors() {
+            logResult('🔍 Monitoring console for errors...', 'info');
+            
+            // Override console methods
+            const originalError = console.error;
+            const originalWarn = console.warn;
+            
+            let errorCount = 0;
+            let warnCount = 0;
+            
+            console.error = function(...args) {
+                errorCount++;
+                logResult(`❌ Console Error: ${args.join(' ')}`, 'bad');
+                originalError.apply(console, args);
+            };
+            
+            console.warn = function(...args) {
+                warnCount++;
+                logResult(`⚠️ Console Warning: ${args.join(' ')}`, 'warn');
+                originalWarn.apply(console, args);
+            };
+            
+            // Check after 3 seconds
+            setTimeout(() => {
+                if (errorCount === 0 && warnCount === 0) {
+                    logResult('✅ No console errors detected', 'good');
+                } else {
+                    logResult(`Found ${errorCount} errors and ${warnCount} warnings`, 'warn');
+                }
+                
+                // Restore original console methods
+                console.error = originalError;
+                console.warn = originalWarn;
+            }, 3000);
+        }
+
+        async function runCompleteFixSequence() {
+            logResult('🚀 Running complete fix sequence...', 'info');
+            
+            // Step 1: Clear cache
+            await clearAllCache();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Step 2: Test WIMP access
+            await testWimpAccess();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Step 3: Test API endpoints
+            await testAPIEndpoints();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Step 4: Test React app
+            await testReactApp();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Step 5: Test bundles
+            await testJavaScriptBundles();
+            
+            logResult('🎉 Complete fix sequence finished!', 'good');
+            logResult('📝 Review results above and try opening WIMP in new tab', 'info');
+        }
+
+        function openWimpInNewTab() {
+            const url = document.getElementById('wimpUrl').value;
+            logResult(`Opening WIMP app in new tab: ${url}`, 'info');
+            window.open(url, '_blank');
+        }
+
+        function openIncognitoInstructions() {
+            logResult('💡 Incognito mode instructions:', 'info');
+            logResult('Chrome: Ctrl+Shift+N | Firefox: Ctrl+Shift+P | Safari: Cmd+Shift+N', 'info');
+            logResult('Then navigate to your WIMP app URL in incognito window', 'info');
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            logResult('🛠️ WIMP Debug Tool ready', 'good');
+            logResult('👆 Start by entering your WIMP URL above and clicking TEST WIMP ACCESS', 'info');
+        });
+    </script>
+</body>
+</html>

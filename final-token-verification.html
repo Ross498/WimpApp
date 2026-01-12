@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Final Token Verification</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
+        .result { padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        .token-display { font-family: monospace; background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <h1>Final Token Verification Test</h1>
+    <p>This will definitively test if frontend tokens are still being cleared after API failures.</p>
+    
+    <button onclick="runComprehensiveTest()">Run Comprehensive Token Test</button>
+    <button onclick="clearAndRestart()">Clear Storage & Restart</button>
+    
+    <div id="results"></div>
+    
+    <script>
+    function log(message, type = 'info') {
+        const div = document.createElement('div');
+        div.className = `result ${type}`;
+        div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+        document.getElementById('results').appendChild(div);
+    }
+    
+    function clearAndRestart() {
+        localStorage.clear();
+        sessionStorage.clear();
+        document.getElementById('results').innerHTML = '';
+        log('All storage cleared. Ready for test.', 'info');
+    }
+    
+    async function runComprehensiveTest() {
+        document.getElementById('results').innerHTML = '';
+        log('🔬 Starting comprehensive token preservation test...', 'info');
+        
+        // Step 1: Login
+        log('Step 1: Logging in...', 'info');
+        try {
+            const loginResp = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: 'test@newwimp.app', password: 'password123' })
+            });
+            const loginData = await loginResp.json();
+            
+            if (loginData.success && loginData.token) {
+                localStorage.setItem('authToken', loginData.token);
+                log(`Login successful! Token: ${loginData.token.substring(0, 60)}...`, 'success');
+                
+                // Display full token for verification
+                const tokenDiv = document.createElement('div');
+                tokenDiv.className = 'token-display';
+                tokenDiv.innerHTML = `<strong>Full Token:</strong> ${loginData.token}`;
+                document.getElementById('results').appendChild(tokenDiv);
+            } else {
+                log('Login failed!', 'error');
+                return;
+            }
+        } catch (error) {
+            log(`Login error: ${error.message}`, 'error');
+            return;
+        }
+        
+        // Step 2: Monitor token through multiple API calls
+        const originalToken = localStorage.getItem('authToken');
+        log(`Original token stored: ${originalToken ? 'YES' : 'NO'}`, originalToken ? 'success' : 'error');
+        
+        const testAPIs = [
+            { name: 'Financial Overview', url: '/api/financial/overview' },
+            { name: 'Financial Budget', url: '/api/financial/budget' },
+            { name: 'Subscription Status', url: '/api/subscription/status' },
+            { name: 'Ingredients', url: '/api/ingredients' },
+            { name: 'Shopping', url: '/api/shopping' },
+            { name: 'Meals Unified', url: '/api/meals/unified' }
+        ];
+        
+        let tokenStillExists = true;
+        
+        for (let i = 0; i < testAPIs.length; i++) {
+            const api = testAPIs[i];
+            const currentToken = localStorage.getItem('authToken');
+            
+            log(`Testing ${api.name}...`, 'info');
+            log(`Token before ${api.name}: ${currentToken ? 'EXISTS' : 'MISSING'}`, currentToken ? 'success' : 'error');
+            
+            if (!currentToken) {
+                tokenStillExists = false;
+                break;
+            }
+            
+            try {
+                const response = await fetch(api.url, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                
+                const tokenAfter = localStorage.getItem('authToken');
+                
+                log(`${api.name} response: ${response.status}`, response.ok ? 'success' : 'error');
+                log(`Token after ${api.name}: ${tokenAfter ? 'EXISTS' : 'MISSING'}`, tokenAfter ? 'success' : 'error');
+                
+                if (currentToken && !tokenAfter) {
+                    log(`🚨 TOKEN CLEARED by ${api.name}!`, 'error');
+                    tokenStillExists = false;
+                    break;
+                } else if (tokenAfter) {
+                    log(`✅ Token preserved after ${api.name}`, 'success');
+                }
+                
+            } catch (error) {
+                const tokenAfterError = localStorage.getItem('authToken');
+                log(`${api.name} error: ${error.message}`, 'error');
+                log(`Token after error: ${tokenAfterError ? 'EXISTS' : 'MISSING'}`, tokenAfterError ? 'success' : 'error');
+                
+                if (currentToken && !tokenAfterError) {
+                    log(`🚨 TOKEN CLEARED by error in ${api.name}!`, 'error');
+                    tokenStillExists = false;
+                    break;
+                }
+            }
+        }
+        
+        // Final verdict
+        const finalToken = localStorage.getItem('authToken');
+        const wasPreserved = originalToken && finalToken && originalToken === finalToken;
+        
+        log('', 'info'); // Spacer
+        log('=== FINAL VERDICT ===', 'info');
+        log(`Original token: ${originalToken ? 'HAD' : 'NONE'}`, 'info');
+        log(`Final token: ${finalToken ? 'HAS' : 'NONE'}`, 'info');
+        log(`Token preserved: ${wasPreserved ? 'YES' : 'NO'}`, wasPreserved ? 'success' : 'error');
+        
+        if (wasPreserved) {
+            log('🎉 SUCCESS: Frontend token clearing issue is FIXED!', 'success');
+        } else if (!finalToken && originalToken) {
+            log('🚨 FAILURE: Frontend is still clearing tokens incorrectly!', 'error');
+        } else {
+            log('⚠️ INCONCLUSIVE: Token handling needs investigation', 'error');
+        }
+    }
+    </script>
+</body>
+</html>

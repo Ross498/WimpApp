@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription API Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .test-section { 
+            background: white; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .error { color: red; }
+        .success { color: green; }
+        .warning { color: orange; }
+        .info { color: blue; }
+        pre { 
+            background: #f5f5f5; 
+            padding: 10px; 
+            border-radius: 4px; 
+            overflow: auto;
+        }
+        button { 
+            background: #4CAF50; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        .loading { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>🔐 Subscription API Test</h1>
+    <p>Test the subscription endpoint that's causing the flash issue</p>
+    
+    <div class="test-section">
+        <button onclick="testSubscriptionEndpoint()">Test /api/subscription/status</button>
+        <button onclick="testAuthStatus()">Test /api/auth/status</button>
+        <button onclick="testBothEndpoints()">Test Both Endpoints</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 Test Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            const logDiv = document.createElement('div');
+            logDiv.className = type;
+            logDiv.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            resultsDiv.appendChild(logDiv);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+            console.log(`[SUBSCRIPTION TEST] ${message}`);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testSubscriptionEndpoint() {
+            log('🔐 Testing /api/subscription/status...', 'info');
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    log('❌ No auth token found in localStorage', 'error');
+                    return;
+                }
+
+                log('📱 Auth token found in localStorage', 'success');
+
+                const response = await fetch('/api/subscription/status', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                });
+
+                log(`📡 Response status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`❌ Error response: ${errorText}`, 'error');
+                    return;
+                }
+
+                const data = await response.json();
+                log('✅ Subscription data received:', 'success');
+                log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+
+                // Check specific fields that cause issues
+                if (data.isPremium) {
+                    log('💎 User is PREMIUM', 'success');
+                } else if (data.tier === 'premium') {
+                    log('💎 User has PREMIUM tier (via tier field)', 'success');
+                } else {
+                    log('🆓 User is FREE tier', 'warning');
+                }
+
+            } catch (error) {
+                log(`❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuthStatus() {
+            log('🔐 Testing /api/auth/status...', 'info');
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    log('❌ No auth token found in localStorage', 'error');
+                    return;
+                }
+
+                const response = await fetch('/api/auth/status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                log(`📡 Auth response status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ Auth data received:', 'success');
+                    log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+                } else {
+                    const errorText = await response.text();
+                    log(`❌ Auth error: ${errorText}`, 'error');
+                }
+
+            } catch (error) {
+                log(`❌ Auth network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testBothEndpoints() {
+            log('🚀 Testing both endpoints to compare...', 'info');
+            clearResults();
+            
+            log('=== TESTING AUTH STATUS FIRST ===', 'info');
+            await testAuthStatus();
+            
+            log('=== TESTING SUBSCRIPTION STATUS ===', 'info');
+            await testSubscriptionEndpoint();
+            
+            log('=== COMPARISON COMPLETE ===', 'info');
+        }
+
+        // Auto-run test on page load if authenticated
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                log('🔧 Auto-running subscription test...', 'info');
+                testBothEndpoints();
+            } else {
+                log('❌ No auth token - please login first at /app', 'warning');
+            }
+        });
+
+        // Monitor token changes
+        let lastToken = localStorage.getItem('authToken');
+        setInterval(() => {
+            const currentToken = localStorage.getItem('authToken');
+            if (currentToken !== lastToken) {
+                if (currentToken) {
+                    log('✅ Auth token appeared - running tests', 'success');
+                    testBothEndpoints();
+                } else {
+                    log('❌ Auth token disappeared', 'warning');
+                }
+                lastToken = currentToken;
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

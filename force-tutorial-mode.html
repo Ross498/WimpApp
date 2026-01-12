@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Force Tutorial Mode</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: #f0f0f0; text-align: center; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        button { padding: 15px 25px; margin: 10px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #c82333; }
+        .status { padding: 15px; margin: 15px 0; background: #f8f9fa; border-radius: 5px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 Force Tutorial Mode</h1>
+        <p>This will completely reset localStorage and force tutorial mode</p>
+        
+        <div class="status" id="status">
+            Click the button to force tutorial mode
+        </div>
+        
+        <button onclick="forceTutorial()">FORCE TUTORIAL MODE NOW</button>
+    </div>
+
+    <script>
+        function forceTutorial() {
+            const status = document.getElementById('status');
+            status.innerHTML = 'Step 1: Clearing all localStorage...';
+            
+            // Clear everything
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            status.innerHTML = 'Step 2: Setting tutorial state...';
+            
+            // Set exact state needed for tutorial
+            localStorage.setItem('hasVisitedWIMP', 'true');
+            // Do NOT set tutorialCompleted (leave undefined/null)
+            
+            status.innerHTML = 'Step 3: Verifying state...';
+            
+            const verification = {
+                hasVisitedWIMP: localStorage.getItem('hasVisitedWIMP'),
+                tutorialCompleted: localStorage.getItem('tutorialCompleted'),
+                authToken: localStorage.getItem('authToken'),
+                user: localStorage.getItem('user')
+            };
+            
+            status.innerHTML = 'Current state:\n' + JSON.stringify(verification, null, 2);
+            
+            setTimeout(() => {
+                status.innerHTML = '✅ Tutorial mode forced! Redirecting to app...';
+                window.location.href = '/app';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

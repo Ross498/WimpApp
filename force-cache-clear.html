@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIMP - Force Cache Clear</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        .success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .warning { background: #fefce8; color: #ca8a04; border: 1px solid #fef3c7; }
+        .info { background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
+        .button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .button:hover { background: #2563eb; }
+        .button.danger { background: #dc2626; }
+        .button.danger:hover { background: #b91c1c; }
+        .log {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 15px 0;
+        }
+        .step { margin: 20px 0; padding: 15px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔄 WIMP Cache Clear Tool</h1>
+        <p>Force clear all caches to fix white screen issues</p>
+    </div>
+
+    <div id="status" class="status info">
+        Ready to clear caches and fix loading issues...
+    </div>
+
+    <div class="step">
+        <h3>Step 1: Clear All Browser Caches</h3>
+        <button class="button" onclick="clearBrowserCache()">Clear Browser Cache</button>
+        <button class="button" onclick="clearLocalStorage()">Clear Local Storage</button>
+    </div>
+
+    <div class="step">
+        <h3>Step 2: Clear PWA Service Worker</h3>
+        <button class="button" onclick="clearServiceWorker()">Unregister Service Worker</button>
+        <button class="button" onclick="clearApplicationCache()">Clear Application Cache</button>
+    </div>
+
+    <div class="step">
+        <h3>Step 3: Force Asset Reload</h3>
+        <button class="button" onclick="testAssets()">Test Fresh Assets</button>
+        <button class="button danger" onclick="hardRefresh()">Hard Refresh + Redirect</button>
+    </div>
+
+    <div id="log" class="log" style="display: none;"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const statusDiv = document.getElementById('status');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            logDiv.style.display = 'block';
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        async function clearBrowserCache() {
+            log('🔄 Clearing browser cache...', 'info');
+            
+            try {
+                // Clear HTTP cache
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    log(`Found ${cacheNames.length} cache(s): ${cacheNames.join(', ')}`);
+                    
+                    for (const cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                        log(`✅ Deleted cache: ${cacheName}`, 'success');
+                    }
+                } else {
+                    log('⚠️ Cache API not available', 'warning');
+                }
+                
+                log('✅ Browser cache cleared successfully', 'success');
+            } catch (error) {
+                log(`❌ Error clearing cache: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLocalStorage() {
+            log('🔄 Clearing local storage and session storage...', 'info');
+            
+            try {
+                // Clear localStorage
+                const localStorageKeys = Object.keys(localStorage);
+                log(`Found ${localStorageKeys.length} localStorage items`);
+                localStorage.clear();
+                
+                // Clear sessionStorage
+                const sessionStorageKeys = Object.keys(sessionStorage);
+                log(`Found ${sessionStorageKeys.length} sessionStorage items`);
+                sessionStorage.clear();
+                
+                // Clear IndexedDB if available
+                if ('indexedDB' in window) {
+                    log('🗄️ Attempting to clear IndexedDB...');
+                    // Note: Complete IndexedDB clearing would need database names
+                }
+                
+                log('✅ Local storage cleared successfully', 'success');
+            } catch (error) {
+                log(`❌ Error clearing storage: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearServiceWorker() {
+            log('🔄 Unregistering service workers...', 'info');
+            
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    log(`Found ${registrations.length} service worker(s)`);
+                    
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                        log(`✅ Unregistered service worker: ${registration.scope}`, 'success');
+                    }
+                    
+                    if (registrations.length === 0) {
+                        log('ℹ️ No service workers found to unregister');
+                    }
+                } else {
+                    log('⚠️ Service Worker not supported', 'warning');
+                }
+                
+                log('✅ Service workers cleared successfully', 'success');
+            } catch (error) {
+                log(`❌ Error clearing service workers: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearApplicationCache() {
+            log('🔄 Clearing application cache...', 'info');
+            
+            try {
+                // Clear application cache (deprecated but may still be used)
+                if (window.applicationCache) {
+                    log('Found legacy application cache');
+                    window.applicationCache.update();
+                    log('✅ Application cache updated', 'success');
+                } else {
+                    log('ℹ️ No legacy application cache found');
+                }
+                
+                // Clear any PWA-specific caches
+                if ('caches' in window) {
+                    const pwaCache = await caches.open('wimp-pwa-v1');
+                    const urls = await pwaCache.keys();
+                    log(`Found ${urls.length} PWA cached resources`);
+                    
+                    for (const request of urls) {
+                        await pwaCache.delete(request);
+                    }
+                }
+                
+                log('✅ Application cache cleared successfully', 'success');
+            } catch (error) {
+                log(`❌ Error clearing application cache: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAssets() {
+            log('🧪 Testing fresh asset loading...', 'info');
+            
+            const assets = [
+                '/assets/index.css',
+                '/assets/index.js',
+                '/manifest.json',
+                '/app-icon-pan-egg.png'
+            ];
+            
+            for (const asset of assets) {
+                try {
+                    const cacheBuster = `?v=${Date.now()}&nocache=true`;
+                    const response = await fetch(asset + cacheBuster, {
+                        cache: 'no-cache',
+                        headers: {
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache'
+                        }
+                    });
+                    
+                    const contentType = response.headers.get('content-type');
+                    log(`${asset}: ${response.status} (${contentType})`, response.ok ? 'success' : 'error');
+                    
+                    if (!response.ok) {
+                        log(`❌ Asset failed to load: ${asset}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ Error testing ${asset}: ${error.message}`, 'error');
+                }
+            }
+            
+            log('✅ Asset testing completed', 'success');
+        }
+
+        async function hardRefresh() {
+            log('🚀 Performing hard refresh and redirect...', 'warning');
+            
+            // Clear everything first
+            await clearBrowserCache();
+            clearLocalStorage();
+            await clearServiceWorker();
+            await clearApplicationCache();
+            
+            log('💫 Redirecting to fresh app in 3 seconds...', 'success');
+            
+            setTimeout(() => {
+                // Force a complete page reload with cache bypass
+                const url = `/app?v=${Date.now()}&fresh=true&nocache=true`;
+                window.location.replace(url);
+            }, 3000);
+        }
+
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            log('🔍 Cache Clear Tool loaded - ready for operation', 'info');
+        });
+    </script>
+</body>
+</html>

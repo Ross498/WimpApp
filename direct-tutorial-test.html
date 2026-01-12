@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Tutorial Test</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: #f0f0f0; text-align: center; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        button { padding: 15px 25px; margin: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #1e7e34; }
+        .status { padding: 15px; margin: 15px 0; background: #f8f9fa; border-radius: 5px; font-family: monospace; font-size: 12px; }
+        .red { background: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Direct Tutorial Test</h1>
+        <p>This will set EXACT tutorial state and redirect immediately</p>
+        
+        <div class="status" id="status">
+            Ready to test tutorial
+        </div>
+        
+        <button onclick="testTutorial()">Test Tutorial Now</button>
+        
+        <div class="status">
+            <strong>Expected behavior:</strong><br/>
+            1. Clear all localStorage<br/>
+            2. Set hasVisitedWIMP = true<br/>
+            3. tutorialCompleted stays null<br/>
+            4. Should show tutorial screen with green "TUTORIAL MODE ACTIVE" indicator<br/>
+            5. Should show Chef welcome with blue background
+        </div>
+    </div>
+
+    <script>
+        function testTutorial() {
+            const status = document.getElementById('status');
+            
+            try {
+                // Step 1: Complete reset
+                status.innerHTML = 'Step 1: Clearing all storage...';
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Step 2: Set tutorial state
+                status.innerHTML = 'Step 2: Setting tutorial state...';
+                localStorage.setItem('hasVisitedWIMP', 'true');
+                // Leave tutorialCompleted as null/undefined
+                
+                // Step 3: Verify state
+                const verification = {
+                    hasVisitedWIMP: localStorage.getItem('hasVisitedWIMP'),
+                    tutorialCompleted: localStorage.getItem('tutorialCompleted'),
+                    authToken: localStorage.getItem('authToken'),
+                    user: localStorage.getItem('user')
+                };
+                
+                status.innerHTML = 'Step 3: State verified\n' + JSON.stringify(verification, null, 2);
+                
+                // Step 4: Navigate
+                setTimeout(() => {
+                    status.innerHTML = 'Step 4: Navigating to app...';
+                    window.location.href = '/app';
+                }, 1000);
+                
+            } catch (error) {
+                status.className = 'status red';
+                status.innerHTML = 'ERROR: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

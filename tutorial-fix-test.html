@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tutorial Fix Verification</title>
+    <style>
+        body { font-family: Arial; margin: 40px; background: #f0f8ff; text-align: center; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        button { padding: 15px 25px; margin: 10px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:hover { background: #1e7e34; transform: translateY(-2px); transition: all 0.2s; }
+        .status { padding: 20px; margin: 15px 0; background: #e8f4fd; border-radius: 8px; font-family: monospace; font-size: 14px; border-left: 4px solid #007bff; }
+        .success { background: #d4edda; border-left-color: #28a745; }
+        .error { background: #f8d7da; border-left-color: #dc3545; }
+        .step { background: #fff3cd; border-left-color: #ffc107; }
+        h1 { color: #2c3e50; margin-bottom: 10px; }
+        .subtitle { color: #6c757d; margin-bottom: 30px; }
+        .countdown { font-size: 20px; font-weight: bold; color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Tutorial Race Condition Fix Test</h1>
+        <p class="subtitle">Testing the fix for the authentication override issue</p>
+        
+        <div class="status" id="status">
+            Ready to test tutorial system fix
+        </div>
+        
+        <button onclick="testTutorialFix()">Test Tutorial Fix</button>
+        <button onclick="clearAndRetry()">Clear & Retry</button>
+        
+        <div class="status">
+            <strong>Expected Fix Behavior:</strong><br/>
+            1. Set tutorial screen first<br/>
+            2. Enable tutorial mode protection<br/>
+            3. Setup demo mode with delayed auth<br/>
+            4. Authentication should NOT override tutorial screen<br/>
+            5. Should see "TUTORIAL MODE ACTIVE" indicator<br/>
+            6. Console should show "TUTORIAL MODE: Staying in tutorial despite authentication"
+        </div>
+        
+        <div class="status">
+            <strong>Race Condition Fix:</strong><br/>
+            • Tutorial mode flag set BEFORE authentication<br/>
+            • Auth check now respects tutorial mode<br/>
+            • Added delay to prevent immediate override<br/>
+            • Protected tutorial screen from auth transitions
+        </div>
+    </div>
+
+    <script>
+        function testTutorialFix() {
+            const status = document.getElementById('status');
+            let step = 1;
+            
+            try {
+                // Step 1: Complete reset
+                status.className = 'status step';
+                status.innerHTML = `Step ${step++}: Clearing all storage and resetting state...`;
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                setTimeout(() => {
+                    // Step 2: Set up tutorial trigger state
+                    status.innerHTML = `Step ${step++}: Setting up tutorial trigger conditions...`;
+                    localStorage.setItem('hasVisitedWIMP', 'true');
+                    // Leave tutorialCompleted null to trigger tutorial
+                    
+                    setTimeout(() => {
+                        // Step 3: Verify state before navigation
+                        const preState = {
+                            hasVisitedWIMP: localStorage.getItem('hasVisitedWIMP'),
+                            tutorialCompleted: localStorage.getItem('tutorialCompleted'),
+                            authToken: localStorage.getItem('authToken')
+                        };
+                        
+                        status.innerHTML = `Step ${step++}: Pre-navigation state verified\n` + JSON.stringify(preState, null, 2);
+                        
+                        setTimeout(() => {
+                            // Step 4: Navigate with expectation
+                            status.className = 'status success';
+                            status.innerHTML = `Step ${step++}: Navigating to app...\n\nEXPECTED: Tutorial screen with protection from auth override`;
+                            
+                            let countdown = 3;
+                            const countdownInterval = setInterval(() => {
+                                status.innerHTML = `Step ${step-1}: Navigating to app...\n\nEXPECTED: Tutorial screen with protection from auth override\n\n<div class="countdown">${countdown}</div>`;
+                                countdown--;
+                                
+                                if (countdown < 0) {
+                                    clearInterval(countdownInterval);
+                                    window.location.href = '/app';
+                                }
+                            }, 1000);
+                            
+                        }, 800);
+                    }, 500);
+                }, 300);
+                
+            } catch (error) {
+                status.className = 'status error';
+                status.innerHTML = 'ERROR: ' + error.message;
+            }
+        }
+        
+        function clearAndRetry() {
+            localStorage.clear();
+            sessionStorage.clear();
+            document.getElementById('status').className = 'status';
+            document.getElementById('status').innerHTML = 'Storage cleared - ready for fresh test';
+        }
+        
+        // Auto-run if URL parameter is set
+        if (new URLSearchParams(window.location.search).get('autotest') === 'true') {
+            setTimeout(testTutorialFix, 1000);
+        }
+    </script>
+</body>
+</html>

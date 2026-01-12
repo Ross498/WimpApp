@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Final Authentication Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; }
+        .result { padding: 10px; margin: 5px 0; border-radius: 4px; font-family: monospace; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        .error { background: #ffebee; color: #c62828; }
+        .info { background: #e3f2fd; color: #1976d2; }
+        button { padding: 12px 24px; margin: 10px 5px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        h1 { color: #1976d2; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Final Authentication & Financial Endpoints Test</h1>
+    
+    <button onclick="runCompleteTest()">Run Complete Test</button>
+    <button onclick="clearResults()">Clear Results</button>
+    
+    <div id="results"></div>
+    
+    <script>
+    function addResult(message, type = 'info') {
+        const div = document.createElement('div');
+        div.className = `result ${type}`;
+        div.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+        document.getElementById('results').appendChild(div);
+    }
+    
+    function clearResults() {
+        document.getElementById('results').innerHTML = '';
+    }
+    
+    async function runCompleteTest() {
+        clearResults();
+        addResult('=== STARTING COMPREHENSIVE AUTHENTICATION TEST ===', 'info');
+        
+        // Step 1: Get fresh token
+        addResult('Step 1: Getting fresh authentication token...', 'info');
+        
+        try {
+            const loginResponse = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    email: 'test@newwimp.app', 
+                    password: 'password123' 
+                })
+            });
+            
+            if (!loginResponse.ok) {
+                throw new Error(`Login failed: ${loginResponse.status}`);
+            }
+            
+            const loginData = await loginResponse.json();
+            if (!loginData.token) {
+                throw new Error('No token in response');
+            }
+            
+            const token = loginData.token;
+            addResult(`✅ Login successful, token length: ${token.length}`, 'success');
+            
+            // Step 2: Test all endpoints
+            const endpoints = [
+                { name: 'Auth Me', url: '/api/auth/me' },
+                { name: 'Financial Overview', url: '/api/financial/overview' },
+                { name: 'Financial Budget', url: '/api/financial/budget' },
+                { name: 'Subscription Status', url: '/api/subscription/status' },
+                { name: 'Shopping List', url: '/api/shopping' },
+                { name: 'Ingredients', url: '/api/ingredients' },
+                { name: 'Meals Unified', url: '/api/meals/unified' },
+                { name: 'Profile', url: '/api/profile' }
+            ];
+            
+            addResult('Step 2: Testing all API endpoints...', 'info');
+            
+            let successCount = 0;
+            let totalCount = endpoints.length;
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint.url, {
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        addResult(`✅ ${endpoint.name}: SUCCESS`, 'success');
+                        successCount++;
+                    } else {
+                        const errorText = await response.text();
+                        addResult(`❌ ${endpoint.name}: ${response.status} - ${errorText.substring(0, 100)}`, 'error');
+                    }
+                } catch (error) {
+                    addResult(`❌ ${endpoint.name}: Network error - ${error.message}`, 'error');
+                }
+            }
+            
+            // Final summary
+            addResult(`=== FINAL RESULTS ===`, 'info');
+            addResult(`✅ Working endpoints: ${successCount}/${totalCount}`, successCount === totalCount ? 'success' : 'error');
+            
+            if (successCount === totalCount) {
+                addResult('🎉 ALL AUTHENTICATION & FINANCIAL ENDPOINTS WORKING!', 'success');
+            } else {
+                addResult(`⚠️ ${totalCount - successCount} endpoints still have issues`, 'error');
+            }
+            
+        } catch (error) {
+            addResult(`❌ Test failed: ${error.message}`, 'error');
+        }
+    }
+    </script>
+</body>
+</html>

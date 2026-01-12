@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Authentication - WIMP</title>
+</head>
+<body>
+    <h1>Clearing Authentication...</h1>
+    <p>Resetting authentication to show fresh login experience.</p>
+    <script>
+        // Clear all authentication data
+        localStorage.removeItem('user');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('hasVisitedWIMP');
+        localStorage.removeItem('tutorialCompleted');
+        
+        console.log('✅ All authentication data cleared');
+        
+        // Redirect to main app
+        setTimeout(() => {
+            window.location.href = '/app';
+        }, 1000);
+    </script>
+</body>
+</html>

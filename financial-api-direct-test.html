@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WIMP Financial API - Direct Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0a0a0a;
+            color: #f0f0f0;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            background: #1a1a2e;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #ff6b6b;
+        }
+        .test-section {
+            background: #1a1a1a;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ff6b6b;
+        }
+        .success {
+            background: #003300;
+            color: #00ff00;
+            padding: 15px;
+            border: 1px solid #00aa00;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #330000;
+            color: #ff6666;
+            padding: 15px;
+            border: 1px solid #aa0000;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .loading {
+            background: #333300;
+            color: #ffff00;
+            padding: 15px;
+            border: 1px solid #aaaa00;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .test-button {
+            background: #006600;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 10px 5px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #008800;
+        }
+        .token-display {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border: 1px solid #00aa00;
+            font-family: monospace;
+            font-size: 11px;
+            word-break: break-all;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .debug-info {
+            background: #001122;
+            color: #aaccff;
+            padding: 15px;
+            border: 1px solid #0066cc;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💰 WIMP Financial API - Direct Test Tool</h1>
+        <p>Bypassing all caches and routing issues - direct API testing</p>
+    </div>
+
+    <div class="test-section">
+        <h2>🔐 Authentication Token</h2>
+        <div class="token-display" id="tokenDisplay">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ODgsInVzZXJuYW1lIjoidGF5ZGVuIiwiZW1haWwiOiJ0YXlkZW5AZ21haWwuY29tIiwibmFtZSI6IlRheWRlbiBVc2VyIiwidXNlcklkIjoiODgiLCJpYXQiOjE3NTY3MzM1MTIsImV4cCI6MTc1NzMzODMxMn0.jYvsYTe7g6bgTOAi0vmWHxMkkpdyDBbCkOxKKlTyfXo</div>
+        <button class="test-button" onclick="copyToken()">📋 Copy Token</button>
+        <button class="test-button" onclick="verifyToken()">🔧 Verify Token</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Direct API Tests</h2>
+        <button class="test-button" onclick="testFinancialOverview()">💰 Financial Overview</button>
+        <button class="test-button" onclick="testFinancialBudget()">📊 Budget API</button>
+        <button class="test-button" onclick="testAuthMe()">🔐 Auth Me (Control)</button>
+        <button class="test-button" onclick="testAllEndpoints()">⚡ Test All</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Live Results</h2>
+        <div id="liveResults">Click test buttons above to see results...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>🐛 Debug Information</h2>
+        <div id="debugInfo" class="debug-info">
+            <strong>Page URL:</strong> <span id="pageUrl"></span><br>
+            <strong>User Agent:</strong> <span id="userAgent"></span><br>
+            <strong>Referer:</strong> <span id="referer"></span><br>
+            <strong>Origin:</strong> <span id="origin"></span><br>
+            <strong>In iframe:</strong> <span id="inIframe"></span><br>
+        </div>
+    </div>
+
+    <script>
+        const JWT_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ODgsInVzZXJuYW1lIjoidGF5ZGVuIiwiZW1haWwiOiJ0YXlkZW5AZ21haWwuY29tIiwibmFtZSI6IlRheWRlbiBVc2VyIiwidXNlcklkIjoiODgiLCJpYXQiOjE3NTY3MzM1MTIsImV4cCI6MTc1NzMzODMxMn0.jYvsYTe7g6bgTOAi0vmWHxMkkpdyDBbCkOxKKlTyfXo';
+
+        // Initialize debug info
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('pageUrl').textContent = window.location.href;
+            document.getElementById('userAgent').textContent = navigator.userAgent;
+            document.getElementById('referer').textContent = document.referrer || 'none';
+            document.getElementById('origin').textContent = window.location.origin;
+            document.getElementById('inIframe').textContent = window !== window.top ? 'YES' : 'NO';
+        });
+
+        function copyToken() {
+            navigator.clipboard.writeText(JWT_TOKEN).then(() => {
+                alert('✅ JWT Token copied to clipboard!');
+            }).catch(() => {
+                alert('❌ Failed to copy token');
+            });
+        }
+
+        async function verifyToken() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '<div class="loading">Verifying JWT token...</div>';
+
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    results.innerHTML = `<div class="success">
+                        <strong>✅ Token Valid</strong><br>
+                        User: ${data.name} (${data.email})<br>
+                        ID: ${data.id}<br>
+                        Subscription: ${data.subscriptionTier}
+                    </div>`;
+                } else {
+                    results.innerHTML = `<div class="error">❌ Token Invalid: ${response.status}</div>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<div class="error">❌ Token Verification Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testFinancialOverview() {
+            const results = document.getElementById('liveResults');
+            results.innerHTML = '<div class="loading">Testing Financial Overview API...</div>';
+
+            console.log('🔐 TESTING FINANCIAL OVERVIEW');
+            console.log('🔐 TOKEN:', JWT_TOKEN.substring(0, 30) + '...');
+
+            try {
+                const headers = {
+                    'Authorization': `Bearer ${JWT_TOKEN}`,
+                    'Content-Type': 'application/json'
+                };
+
+                console.log('📡 HEADERS BEING SENT:', headers);
+
+                const response = await fetch('/api/financial/overview', {
+                    method: 'GET',
+                    headers: headers
+                });
+
+                console.log('📥 RESPONSE STATUS:', response.status);
+                console.log('📥 RESPONSE HEADERS:', Object.fromEntries(response.headers.entries()));
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('📥 RESPONSE DATA:', data);
+                    const metrics = data.data;
+
+                    results.innerHTML = `<div class="success">
+                        <h3>✅ Financial Overview Success</h3>
+                        <strong>Status:</strong> ${response.status}<br><br>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <div><strong>Monthly Spending:</strong> R${(metrics.monthlySpending || 0).toFixed(2)}</div>
+                            <div><strong>Pantry Value:</strong> R${(metrics.pantryValue || 0).toFixed(0)}</div>
+                            <div><strong>Receipts Scanned:</strong> ${metrics.receiptsScanned || 0}</div>
+                            <div><strong>Total Spending:</strong> R${(metrics.totalSpending || 0).toFixed(2)}</div>
+                            <div><strong>Monthly Budget:</strong> R${(metrics.monthlyBudget || 0).toFixed(0)}</div>
+                            <div><strong>Budget Used:</strong> ${(metrics.budgetUsed || 0).toFixed(1)}%</div>
+                        </div>
+                        <h4>Store Breakdown:</h4>
+                        ${Object.entries(metrics.storeBreakdown || {}).map(([store, amount]) => 
+                            `<div>${store}: R${amount.toFixed(2)}</div>`
+                        ).join('')}
+                    </div>`;
+                } else {
+                    const errorText = await response.text();
+                    console.log('❌ ERROR RESPONSE:', errorText);
+
+                    results.innerHTML = `<div class="error">
+                        <h3>❌ Financial Overview Failed</h3>
+                        <strong>Status:</strong> ${response.status}<br>
+                        <strong>Error:</strong> ${errorText}<br>
+                        <strong>Headers Sent:</strong><br>
+                        <div class="token-display">Authorization: Bearer ${JWT_TOKEN.substring(0, 20)}...<br>Content-Type: application/json</div>
+                        <strong>Response Headers:</strong><br>
+                        <div class="token-display">${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}</div>
+                    </div>`;
+                }
+            } catch (error) {
+                console.log('💥 NETWORK ERROR:', error);
+                results.innerHTML = `<div class="error">
+                    <h3>❌ Network Error</h3>
+                    <strong>Error:</strong> ${error.message}<br>
+                    <strong>Type:</strong> ${error.name}
+                </div>`;
+            }
+        }
+
+        async function testFinancialBudget() {
+            const results = document.getElementById('liveResults');
+            results.innerHTML = '<div class="loading">Testing Financial Budget API...</div>';
+
+            try {
+                const response = await fetch('/api/financial/budget', {
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    results.innerHTML = `<div class="success">
+                        <h3>✅ Budget API Success</h3>
+                        <strong>Status:</strong> ${response.status}<br>
+                        <strong>Budget:</strong> R${data.budget || 'Unknown'}<br>
+                        <strong>Data:</strong> ${JSON.stringify(data, null, 2)}
+                    </div>`;
+                } else {
+                    const errorText = await response.text();
+                    results.innerHTML = `<div class="error">
+                        <h3>❌ Budget API Failed</h3>
+                        <strong>Status:</strong> ${response.status}<br>
+                        <strong>Error:</strong> ${errorText}
+                    </div>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<div class="error">❌ Budget API Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testAuthMe() {
+            const results = document.getElementById('liveResults');
+            results.innerHTML = '<div class="loading">Testing Auth Me API...</div>';
+
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    results.innerHTML = `<div class="success">
+                        <h3>✅ Auth Me Success</h3>
+                        <strong>Status:</strong> ${response.status}<br>
+                        <strong>User:</strong> ${data.name}<br>
+                        <strong>Email:</strong> ${data.email}<br>
+                        <strong>Subscription:</strong> ${data.subscriptionTier}
+                    </div>`;
+                } else {
+                    const errorText = await response.text();
+                    results.innerHTML = `<div class="error">
+                        <h3>❌ Auth Me Failed</h3>
+                        <strong>Status:</strong> ${response.status}<br>
+                        <strong>Error:</strong> ${errorText}
+                    </div>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<div class="error">❌ Auth Me Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testAllEndpoints() {
+            const results = document.getElementById('liveResults');
+            results.innerHTML = '<div class="loading">Testing all endpoints...</div>';
+
+            const endpoints = [
+                { name: 'Auth Me', url: '/api/auth/me' },
+                { name: 'Financial Overview', url: '/api/financial/overview' },
+                { name: 'Financial Budget', url: '/api/financial/budget' },
+                { name: 'Subscription Status', url: '/api/subscription/status' }
+            ];
+
+            let allResults = '<h3>🎯 Complete API Test Results</h3>';
+
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint.url, {
+                        headers: {
+                            'Authorization': `Bearer ${JWT_TOKEN}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const status = response.ok ? '✅' : '❌';
+                    const statusText = response.ok ? 'SUCCESS' : 'FAILED';
+                    
+                    allResults += `<div style="margin: 10px 0; padding: 10px; background: ${response.ok ? '#003300' : '#330000'}; border-radius: 4px;">
+                        <strong>${status} ${endpoint.name}:</strong> ${statusText} (${response.status})
+                    </div>`;
+                } catch (error) {
+                    allResults += `<div style="margin: 10px 0; padding: 10px; background: #330000; border-radius: 4px;">
+                        <strong>❌ ${endpoint.name}:</strong> ERROR (${error.message})
+                    </div>`;
+                }
+            }
+
+            results.innerHTML = `<div class="success">${allResults}</div>`;
+        }
+
+        console.log('🔧 Financial API Direct Test Tool loaded');
+        console.log('🔐 JWT Token ready:', JWT_TOKEN.substring(0, 30) + '...');
+    </script>
+</body>
+</html>

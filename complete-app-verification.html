@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Complete App Verification</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f8f9fa; }
+        .test { margin: 10px 0; padding: 15px; border-radius: 5px; }
+        .pass { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .fail { background: #f8d7da; color: #721c24; border: 1px solid #f1aeb5; }
+        .loading { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        h1 { color: #2c3e50; }
+        .summary { font-size: 18px; font-weight: bold; margin: 20px 0; padding: 20px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Complete App Verification</h1>
+    <button onclick="runCompleteVerification()">Run Complete Verification</button>
+    <div id="results"><div class="test loading">Click button to start verification...</div></div>
+
+    <script>
+        async function runCompleteVerification() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="test loading">Running comprehensive verification...</div>';
+            
+            const tests = [];
+            
+            try {
+                // Test 1: Root Route
+                console.log('Testing root route...');
+                const rootResponse = await fetch('/?_v=' + Date.now(), { cache: 'no-cache' });
+                const rootHtml = await rootResponse.text();
+                const rootHasAll = rootHtml.includes('<div id="root">') && 
+                                 rootHtml.includes('/assets/index.js') && 
+                                 rootHtml.includes('WIMP Kitchen Companion');
+                
+                tests.push({
+                    name: 'Root Route (/) Test',
+                    passed: rootResponse.ok && rootHasAll,
+                    details: `Status: ${rootResponse.status}, Elements: ${rootHasAll ? 'All Present' : 'Missing'}`
+                });
+
+                // Test 2: App Route
+                console.log('Testing app route...');
+                const appResponse = await fetch('/app?_v=' + Date.now(), { cache: 'no-cache' });
+                const appHtml = await appResponse.text();
+                const appHasAll = appHtml.includes('<div id="root">') && 
+                                appHtml.includes('/assets/index.js') && 
+                                appHtml.includes('WIMP Kitchen Companion');
+                
+                tests.push({
+                    name: 'App Route (/app) Test',
+                    passed: appResponse.ok && appHasAll,
+                    details: `Status: ${appResponse.status}, Elements: ${appHasAll ? 'All Present' : 'Missing'}`
+                });
+
+                // Test 3: Meals Route
+                console.log('Testing meals route...');
+                const mealsResponse = await fetch('/meals?_v=' + Date.now(), { cache: 'no-cache' });
+                const mealsHtml = await mealsResponse.text();
+                const mealsHasAll = mealsHtml.includes('<div id="root">') && 
+                                  mealsHtml.includes('/assets/index.js') && 
+                                  mealsHtml.includes('WIMP Kitchen Companion');
+                
+                tests.push({
+                    name: 'Meals Route (/meals) Test',
+                    passed: mealsResponse.ok && mealsHasAll,
+                    details: `Status: ${mealsResponse.status}, Elements: ${mealsHasAll ? 'All Present' : 'Missing'}`
+                });
+
+                // Test 4: JavaScript Bundle
+                console.log('Testing JavaScript bundle...');
+                const jsResponse = await fetch('/assets/index.js?_v=' + Date.now(), { cache: 'no-cache' });
+                const jsContentType = jsResponse.headers.get('content-type');
+                
+                tests.push({
+                    name: 'React Bundle (/assets/index.js) Test',
+                    passed: jsResponse.ok && jsContentType && jsContentType.includes('javascript'),
+                    details: `Status: ${jsResponse.status}, Content-Type: ${jsContentType}`
+                });
+
+                // Test 5: CSS Bundle
+                console.log('Testing CSS bundle...');
+                const cssResponse = await fetch('/assets/index.css?_v=' + Date.now(), { cache: 'no-cache' });
+                const cssContentType = cssResponse.headers.get('content-type');
+                
+                tests.push({
+                    name: 'CSS Bundle (/assets/index.css) Test',
+                    passed: cssResponse.ok && cssContentType && cssContentType.includes('css'),
+                    details: `Status: ${cssResponse.status}, Content-Type: ${cssContentType}`
+                });
+
+                // Test 6: PWA Manifest
+                console.log('Testing PWA manifest...');
+                const manifestResponse = await fetch('/manifest.json?_v=' + Date.now(), { cache: 'no-cache' });
+                const manifestContentType = manifestResponse.headers.get('content-type');
+                
+                tests.push({
+                    name: 'PWA Manifest (/manifest.json) Test',
+                    passed: manifestResponse.ok && manifestContentType && manifestContentType.includes('json'),
+                    details: `Status: ${manifestResponse.status}, Content-Type: ${manifestContentType}`
+                });
+
+                // Test 7: API Health
+                console.log('Testing API health...');
+                const healthResponse = await fetch('/api/health?_v=' + Date.now(), { cache: 'no-cache' });
+                let healthData = {};
+                try {
+                    healthData = await healthResponse.json();
+                } catch(e) {}
+                
+                tests.push({
+                    name: 'API Health (/api/health) Test',
+                    passed: healthResponse.ok && healthData.status === 'healthy',
+                    details: `Status: ${healthResponse.status}, Health: ${healthData.status || 'Unknown'}`
+                });
+
+                // Generate Results
+                const passedCount = tests.filter(t => t.passed).length;
+                const totalCount = tests.length;
+                const allPassed = passedCount === totalCount;
+
+                let resultsHtml = `
+                    <div class="summary ${allPassed ? 'pass' : 'fail'}">
+                        🎯 VERIFICATION RESULTS: ${passedCount}/${totalCount} tests passed (${Math.round(passedCount/totalCount*100)}%)
+                        <br>
+                        ${allPassed ? '🎉 ALL SYSTEMS OPERATIONAL!' : '⚠️ Some issues detected'}
+                    </div>
+                `;
+
+                tests.forEach(test => {
+                    resultsHtml += `
+                        <div class="test ${test.passed ? 'pass' : 'fail'}">
+                            <strong>${test.name}:</strong> ${test.passed ? '✅ PASS' : '❌ FAIL'}
+                            <br><small>${test.details}</small>
+                        </div>
+                    `;
+                });
+
+                results.innerHTML = resultsHtml;
+                
+                console.log(`Verification complete: ${passedCount}/${totalCount} tests passed`);
+
+            } catch (error) {
+                console.error('Verification error:', error);
+                results.innerHTML = `<div class="test fail">❌ Verification failed: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Subscription Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Simple Subscription Status Check</h1>
+    <button onclick="testSubscription()">Test Current Subscription</button>
+    <div id="results"></div>
+
+    <script>
+        async function testSubscription() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    resultsDiv.innerHTML = '<div class="error">No auth token found</div>';
+                    return;
+                }
+
+                const response = await fetch('/api/subscription/status', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+                
+                let html = '<div class="result success"><h3>API Response:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre></div>';
+                
+                // Test premium detection logic
+                const isPremium = data.isPremium === true || data.tier === 'premium' || data.currentPlan === 'premium';
+                
+                html += '<div class="result ' + (isPremium ? 'success' : 'error') + '">';
+                html += '<h3>Premium Status: ' + (isPremium ? 'PREMIUM ✅' : 'FREE ❌') + '</h3>';
+                html += '<p><strong>data.isPremium:</strong> ' + data.isPremium + '</p>';
+                html += '<p><strong>data.tier:</strong> ' + data.tier + '</p>';
+                html += '<p><strong>data.currentPlan:</strong> ' + data.currentPlan + '</p>';
+                html += '</div>';
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = '<div class="error">Error: ' + error.message + '</div>';
+            }
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', testSubscription);
+    </script>
+</body>
+</html>

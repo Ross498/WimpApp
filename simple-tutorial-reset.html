@@ -55,12 +55,18 @@
         function resetTutorial() {
             document.getElementById('status').innerHTML = 'Resetting tutorial state...';
             
-            // Clear ALL localStorage to ensure clean state
-            localStorage.clear();
+            // Clear all tutorial-related localStorage
+            const keys = [
+                'hasVisitedWIMP',
+                'tutorialCompleted', 
+                'hasSeenWelcome',
+                'authToken',
+                'user',
+                'tutorial_started',
+                'contextual_tutorial_completed'
+            ];
             
-            // Set up fresh tutorial state
-            localStorage.setItem('hasVisitedWIMP', 'true');
-            // DO NOT set tutorialCompleted - leave it null/undefined
+            keys.forEach(key => localStorage.removeItem(key));
             
             document.getElementById('status').innerHTML = '✅ Tutorial reset complete! Redirecting...';
             

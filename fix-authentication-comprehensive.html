@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comprehensive Authentication Fix</title>
+</head>
+<body>
+    <h1>Comprehensive Authentication Fix</h1>
+    <button onclick="fixAuthentication()">Fix Authentication Issues</button>
+    <div id="status"></div>
+    
+    <script>
+    async function fixAuthentication() {
+        const status = document.getElementById('status');
+        
+        try {
+            status.innerHTML = '<p>Step 1: Clearing all authentication data...</p>';
+            
+            // Clear ALL authentication data
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Clear all cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            status.innerHTML += '<p>Step 2: Performing fresh login...</p>';
+            
+            // Fresh login
+            const loginResponse = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: 'test@newwimp.app',
+                    password: 'password123'
+                })
+            });
+            
+            const loginData = await loginResponse.json();
+            
+            if (loginData.success && loginData.token) {
+                localStorage.setItem('authToken', loginData.token);
+                localStorage.setItem('user', JSON.stringify(loginData.user));
+                localStorage.setItem('isAuthenticated', 'true');
+                
+                status.innerHTML += '<p>Step 3: Testing all APIs with fresh token...</p>';
+                
+                // Test all critical APIs
+                const token = loginData.token;
+                const tests = [
+                    { name: 'Auth Me', url: '/api/auth/me' },
+                    { name: 'Financial', url: '/api/financial/overview' },
+                    { name: 'Meals', url: '/api/meals/unified' },
+                    { name: 'Subscription', url: '/api/subscription/status' },
+                    { name: 'Ingredients', url: '/api/ingredients' },
+                    { name: 'Shopping', url: '/api/shopping' }
+                ];
+                
+                let results = '<h3>API Test Results:</h3>';
+                
+                for (const test of tests) {
+                    try {
+                        const response = await fetch(test.url, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        
+                        const data = await response.json();
+                        const success = response.ok && (data.success !== false);
+                        
+                        results += `<p><strong>${test.name}</strong>: ${success ? '✅ WORKING' : '❌ FAILED'}</p>`;
+                        
+                        if (!success) {
+                            results += `<p style="margin-left:20px;">Error: ${data.message || data.error || 'Unknown error'}</p>`;
+                        }
+                    } catch (error) {
+                        results += `<p><strong>${test.name}</strong>: ❌ NETWORK ERROR</p>`;
+                    }
+                }
+                
+                status.innerHTML += results;
+                status.innerHTML += '<p><strong>Authentication fix completed!</strong></p>';
+                
+                // Reload the app after 3 seconds
+                setTimeout(() => {
+                    window.location.href = '/app';
+                }, 3000);
+                
+            } else {
+                status.innerHTML += '<p>❌ Login failed</p>';
+            }
+            
+        } catch (error) {
+            status.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+        }
+    }
+    </script>
+</body>
+</html>

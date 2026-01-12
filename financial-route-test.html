@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Financial Route Test - SUCCESS!</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0f0f0f;
+            color: #00ff00;
+            padding: 20px;
+            text-align: center;
+        }
+        .success {
+            font-size: 24px;
+            color: #00ff00;
+            background: #001100;
+            padding: 20px;
+            border: 2px solid #00ff00;
+            margin: 20px;
+        }
+        .debug {
+            background: #220000;
+            color: #ff6666;
+            padding: 15px;
+            margin: 10px;
+            border: 1px solid #ff0000;
+        }
+        .links {
+            background: #001122;
+            color: #6666ff;
+            padding: 15px;
+            margin: 10px;
+            border: 1px solid #0066ff;
+        }
+        a {
+            color: #66ff66;
+            text-decoration: none;
+            display: block;
+            margin: 5px;
+            padding: 10px;
+            background: #003300;
+            border: 1px solid #00aa00;
+        }
+        a:hover {
+            background: #005500;
+        }
+    </style>
+</head>
+<body>
+    <div class="success">
+        ✅ FINANCIAL ROUTE TEST SUCCESS!
+    </div>
+    
+    <h2>🔧 Financial Debug Route Test</h2>
+    <div class="debug">
+        <strong>Route:</strong> /financial-route-test.html<br>
+        <strong>Time:</strong> <span id="timestamp"></span><br>
+        <strong>URL:</strong> <span id="current-url"></span><br>
+        <strong>Status:</strong> Financial route handler working correctly<br>
+        <strong>Host:</strong> <span id="host-info"></span><br>
+    </div>
+    
+    <div class="links">
+        <h3>🔍 Test Financial Debug Links:</h3>
+        <a href="/comprehensive-financial-frontend-test.html" target="_blank" onclick="testLink(this); return true;">
+            🎯 Comprehensive Financial Frontend Test
+        </a>
+        <a href="/financial-debug-comprehensive.html" target="_blank" onclick="testLink(this); return true;">
+            🔧 Financial Debug Comprehensive
+        </a>
+        <a href="/route-test.html" target="_blank">
+            📋 Main Route Test Page
+        </a>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        document.getElementById('timestamp').textContent = new Date().toISOString();
+        document.getElementById('current-url').textContent = window.location.href;
+        document.getElementById('host-info').textContent = window.location.host;
+        
+        function testLink(linkElement) {
+            const results = document.getElementById('results');
+            const href = linkElement.href;
+            const linkText = linkElement.textContent;
+            
+            console.log('🔗 Testing link:', href);
+            console.log('🌐 Current location:', window.location.href);
+            console.log('🔍 Is in iframe:', window !== window.top);
+            
+            results.innerHTML += `<div style="margin: 10px; padding: 10px; background: #333; border: 1px solid #666;">
+                <strong>Testing:</strong> ${linkText}<br>
+                <strong>URL:</strong> ${href}<br>
+                <strong>Time:</strong> ${new Date().toISOString()}<br>
+                <strong>In iframe:</strong> ${window !== window.top ? 'YES' : 'NO'}<br>
+                <strong>Status:</strong> <span style="color: yellow;">About to navigate...</span><br>
+                <button onclick="openInNewTab('${href}')" style="background: #006600; color: white; padding: 5px; margin: 5px; border: none; cursor: pointer;">🔗 Open in New Tab</button>
+                <button onclick="forceNavigation('${href}')" style="background: #666600; color: white; padding: 5px; margin: 5px; border: none; cursor: pointer;">🎯 Force Navigate</button>
+            </div>`;
+            
+            // Try to detect navigation issue
+            setTimeout(() => {
+                if (window.location.href === href) {
+                    console.log('✅ Navigation successful');
+                } else {
+                    console.log('❌ Navigation failed - URL did not change');
+                    console.log('Expected:', href);
+                    console.log('Actual:', window.location.href);
+                }
+            }, 1000);
+            
+            // Let the normal navigation happen
+            return true;
+        }
+        
+        function openInNewTab(url) {
+            console.log('🔗 Opening in new tab:', url);
+            window.open(url, '_blank');
+        }
+        
+        function forceNavigation(url) {
+            console.log('🎯 Force navigating to:', url);
+            window.top.location.href = url;
+        }
+        
+        console.log('🔧 Financial Route Test: HTML file loaded successfully');
+        console.log('🌐 Current URL:', window.location.href);
+        console.log('📍 Host:', window.location.host);
+        console.log('🔍 In iframe:', window !== window.top);
+        console.log('🔍 Parent URL:', window !== window.top ? document.referrer : 'Not in iframe');
+        console.log('🎯 Financial Route Test: If you see this, financial routes are working');
+        
+        // Detect Replit preview environment
+        if (window !== window.top) {
+            console.log('⚠️ REPLIT PREVIEW DETECTED: Running in iframe - this may affect navigation');
+            
+            const warning = document.createElement('div');
+            warning.style.cssText = 'background: #663300; color: #ffaa00; padding: 15px; margin: 10px; border: 2px solid #ff6600; border-radius: 5px;';
+            warning.innerHTML = `
+                <h3>⚠️ REPLIT PREVIEW DETECTED</h3>
+                <p>You're viewing this in the Replit preview iframe. Navigation to other HTML files may redirect to the main app.</p>
+                <p><strong>Workarounds:</strong></p>
+                <ul>
+                    <li>Use "Open in New Tab" buttons below</li>
+                    <li>Or use the external browser URL (without preview iframe)</li>
+                </ul>
+            `;
+            document.body.insertBefore(warning, document.body.firstChild);
+        }
+    </script>
+</body>
+</html>

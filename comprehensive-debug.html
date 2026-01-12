@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIMP Comprehensive Debug Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">🔧 WIMP Comprehensive Debug Tool</h1>
+            <p class="text-gray-600 mb-6">This tool diagnoses all UI issues including meal planner, app mounting, and cache problems.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <button onclick="runFullDiagnostic()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 shadow-lg">
+                    🚨 Run Full Diagnostic
+                </button>
+                <button onclick="testAppMounting()" class="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 shadow-lg">
+                    ⚛️ Test App Mounting
+                </button>
+                <button onclick="testMealPlannerUI()" class="bg-purple-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-purple-700 shadow-lg">
+                    🍽️ Test Meal Planner UI
+                </button>
+                <button onclick="clearAllCaches()" class="bg-red-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-red-700 shadow-lg">
+                    🧹 Clear All Caches
+                </button>
+                <button onclick="testAPIConnectivity()" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-indigo-700 shadow-lg">
+                    🌐 Test API Connectivity
+                </button>
+                <button onclick="openMainApp()" class="bg-orange-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-orange-700 shadow-lg">
+                    🚀 Open Main App
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🔍 Debug Results</h2>
+            <div id="debug-output" class="bg-gray-900 text-green-400 p-4 rounded-lg min-h-96 font-mono text-sm overflow-auto max-h-96">
+                <div class="text-gray-400">Ready to debug... Click any button above to start.</div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6 mt-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 System Status</h2>
+            <div id="system-status" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-bold text-gray-700 mb-2">Authentication</h3>
+                    <div id="auth-status" class="text-gray-600">Not tested</div>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-bold text-gray-700 mb-2">Subscription</h3>
+                    <div id="subscription-status" class="text-gray-600">Not tested</div>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-bold text-gray-700 mb-2">App Status</h3>
+                    <div id="app-status" class="text-gray-600">Not tested</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const output = document.getElementById('debug-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                info: 'text-green-400',
+                success: 'text-emerald-400',
+                error: 'text-red-400',
+                warning: 'text-yellow-400',
+                debug: 'text-cyan-400'
+            };
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `mb-1 ${colors[type]}`;
+            logEntry.innerHTML = `<span class="text-gray-500">[${timestamp}]</span> ${message}`;
+            
+            if (output.children.length === 1 && output.children[0].textContent.includes('Ready to debug')) {
+                output.innerHTML = '';
+            }
+            
+            output.appendChild(logEntry);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateStatus(section, status, isSuccess) {
+            const element = document.getElementById(`${section}-status`);
+            element.textContent = status;
+            element.className = isSuccess ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold';
+        }
+
+        async function runFullDiagnostic() {
+            log('🚨 STARTING FULL SYSTEM DIAGNOSTIC', 'warning');
+            log('═══════════════════════════════════════', 'debug');
+            
+            await testAuthentication();
+            await testSubscription();
+            await testMealPlansAPI();
+            await testAppMounting();
+            await checkCacheStatus();
+            await testNetworkConnectivity();
+            
+            log('═══════════════════════════════════════', 'debug');
+            log('✅ FULL DIAGNOSTIC COMPLETE', 'success');
+        }
+
+        async function testAuthentication() {
+            log('🔐 Testing authentication system...', 'info');
+            
+            try {
+                const response = await fetch('/api/auth/status', {
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                log(`Auth Response: ${response.status} - ${JSON.stringify(data)}`, response.ok ? 'success' : 'error');
+                updateStatus('auth', response.ok ? 'Connected' : 'Failed', response.ok);
+                
+                // Check cookies
+                const cookies = document.cookie;
+                log(`Cookies found: ${cookies ? 'Yes' : 'No'}`, cookies ? 'success' : 'warning');
+                
+            } catch (error) {
+                log(`Auth Error: ${error.message}`, 'error');
+                updateStatus('auth', 'Error', false);
+            }
+        }
+
+        async function testSubscription() {
+            log('💳 Testing subscription system...', 'info');
+            
+            try {
+                const response = await fetch('/api/subscription/status', {
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                log(`Subscription Response: ${response.status} - ${JSON.stringify(data)}`, response.ok ? 'success' : 'error');
+                
+                if (data.isPremium !== undefined) {
+                    updateStatus('subscription', data.isPremium ? 'Premium' : 'Free', true);
+                    log(`User is: ${data.isPremium ? 'PREMIUM' : 'FREE'}`, data.isPremium ? 'success' : 'warning');
+                } else {
+                    updateStatus('subscription', 'Unknown', false);
+                }
+                
+            } catch (error) {
+                log(`Subscription Error: ${error.message}`, 'error');
+                updateStatus('subscription', 'Error', false);
+            }
+        }
+
+        async function testMealPlansAPI() {
+            log('🍽️ Testing meal plans APIs...', 'info');
+            
+            try {
+                // Test regular meal plans
+                const response1 = await fetch('/api/meal-plans', {
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data1 = await response1.json();
+                log(`Meal Plans API: ${response1.status} - Found ${data1.plans?.length || 0} plans`, response1.ok ? 'success' : 'error');
+                
+                // Test AI meal plans
+                const response2 = await fetch('/api/ai-meal-plans', {
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data2 = await response2.json();
+                log(`AI Meal Plans API: ${response2.status} - Found ${data2.plans?.length || 0} plans`, response2.ok ? 'success' : 'error');
+                
+            } catch (error) {
+                log(`Meal Plans API Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAppMounting() {
+            log('⚛️ Testing React app mounting...', 'info');
+            
+            // Check if we can reach the main app
+            try {
+                const response = await fetch('/app');
+                log(`Main app endpoint: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                // Check for React-specific elements in a new window
+                const popup = window.open('/app', 'test-app', 'width=800,height=600');
+                
+                setTimeout(() => {
+                    try {
+                        const rootElement = popup.document.getElementById('root');
+                        log(`React root element: ${rootElement ? 'Found' : 'Not found'}`, rootElement ? 'success' : 'error');
+                        
+                        if (rootElement) {
+                            const hasContent = rootElement.children.length > 0;
+                            log(`React content loaded: ${hasContent ? 'Yes' : 'No'}`, hasContent ? 'success' : 'error');
+                            updateStatus('app', hasContent ? 'Mounted' : 'Empty', hasContent);
+                        } else {
+                            updateStatus('app', 'Not Found', false);
+                        }
+                        
+                        popup.close();
+                    } catch (e) {
+                        log(`App mounting check error: ${e.message}`, 'error');
+                        updateStatus('app', 'Error', false);
+                        popup.close();
+                    }
+                }, 3000);
+                
+            } catch (error) {
+                log(`App mounting error: ${error.message}`, 'error');
+                updateStatus('app', 'Error', false);
+            }
+        }
+
+        async function testMealPlannerUI() {
+            log('🍽️ Testing meal planner UI specifically...', 'info');
+            
+            // Open meal planner in new window and test
+            const popup = window.open('/app#favorites', 'meal-planner-test', 'width=1200,height=800');
+            
+            setTimeout(() => {
+                try {
+                    // Check for meal planner specific elements
+                    const mealElements = popup.document.querySelectorAll('[class*="meal"], [data-testid*="meal"]');
+                    log(`Meal planner elements found: ${mealElements.length}`, mealElements.length > 0 ? 'success' : 'warning');
+                    
+                    // Check for tab navigation
+                    const tabElements = popup.document.querySelectorAll('[class*="tab"], [role="tab"]');
+                    log(`Tab elements found: ${tabElements.length}`, tabElements.length > 0 ? 'success' : 'warning');
+                    
+                    // Check for error messages
+                    const errorElements = popup.document.querySelectorAll('[class*="error"], [class*="Error"]');
+                    log(`Error elements found: ${errorElements.length}`, errorElements.length === 0 ? 'success' : 'warning');
+                    
+                    // Check console for errors
+                    const consoleLogs = [];
+                    const originalLog = popup.console.log;
+                    const originalError = popup.console.error;
+                    
+                    popup.console.log = function(...args) {
+                        consoleLogs.push(['log', ...args]);
+                        originalLog.apply(popup.console, args);
+                    };
+                    
+                    popup.console.error = function(...args) {
+                        consoleLogs.push(['error', ...args]);
+                        originalError.apply(popup.console, args);
+                    };
+                    
+                    setTimeout(() => {
+                        const errors = consoleLogs.filter(entry => entry[0] === 'error');
+                        log(`Console errors found: ${errors.length}`, errors.length === 0 ? 'success' : 'error');
+                        if (errors.length > 0) {
+                            errors.slice(0, 3).forEach(error => {
+                                log(`Console Error: ${error.slice(1).join(' ')}`, 'error');
+                            });
+                        }
+                        popup.close();
+                    }, 2000);
+                    
+                } catch (e) {
+                    log(`Meal planner UI test error: ${e.message}`, 'error');
+                    popup.close();
+                }
+            }, 3000);
+        }
+
+        function checkCacheStatus() {
+            log('📱 Checking cache status...', 'info');
+            
+            // LocalStorage
+            const localKeys = Object.keys(localStorage);
+            log(`LocalStorage keys: ${localKeys.length}`, localKeys.length > 0 ? 'info' : 'warning');
+            localKeys.forEach(key => {
+                if (key.includes('auth') || key.includes('subscription') || key.includes('meal')) {
+                    const value = localStorage.getItem(key);
+                    log(`  ${key}: ${value?.substring(0, 50)}...`, 'debug');
+                }
+            });
+            
+            // SessionStorage
+            const sessionKeys = Object.keys(sessionStorage);
+            log(`SessionStorage keys: ${sessionKeys.length}`, sessionKeys.length > 0 ? 'info' : 'warning');
+            
+            // Service Workers
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    log(`Service Workers: ${registrations.length}`, registrations.length > 0 ? 'info' : 'warning');
+                });
+            }
+        }
+
+        async function testNetworkConnectivity() {
+            log('🌐 Testing network connectivity...', 'info');
+            
+            const endpoints = [
+                '/api/health',
+                '/api/auth/status',
+                '/api/subscription/status',
+                '/api/meal-plans',
+                '/api/ingredients'
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint, { credentials: 'include' });
+                    log(`${endpoint}: ${response.status}`, response.ok ? 'success' : 'warning');
+                } catch (error) {
+                    log(`${endpoint}: ERROR - ${error.message}`, 'error');
+                }
+            }
+        }
+
+        function clearAllCaches() {
+            log('🧹 Clearing all caches...', 'warning');
+            
+            // Clear localStorage
+            const localCount = Object.keys(localStorage).length;
+            localStorage.clear();
+            log(`Cleared ${localCount} localStorage items`, 'success');
+            
+            // Clear sessionStorage
+            const sessionCount = Object.keys(sessionStorage).length;
+            sessionStorage.clear();
+            log(`Cleared ${sessionCount} sessionStorage items`, 'success');
+            
+            // Clear cookies
+            document.cookie.split(";").forEach(cookie => {
+                const eqPos = cookie.indexOf("=");
+                const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+                document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+            });
+            log('Cleared cookies', 'success');
+            
+            // Unregister service workers
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    registrations.forEach(registration => {
+                        registration.unregister();
+                        log(`Unregistered SW: ${registration.scope}`, 'success');
+                    });
+                });
+            }
+            
+            log('✅ All caches cleared! Refresh the main app now.', 'success');
+        }
+
+        function openMainApp() {
+            log('🚀 Opening main application...', 'info');
+            window.open('/app', '_blank');
+        }
+
+        // Auto-run basic status check on load
+        window.addEventListener('DOMContentLoaded', () => {
+            log('🔧 Comprehensive Debug Tool loaded', 'success');
+            log('Click "Run Full Diagnostic" for complete testing', 'info');
+        });
+    </script>
+</body>
+</html>

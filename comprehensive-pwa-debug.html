@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIMP PWA Comprehensive Debug Tool</title>
+    <style>
+        body {
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #f0f0f0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #333;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            color: #0a0a0a;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 222, 128, 0.3);
+        }
+        .btn.danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        .result {
+            background: #262626;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4ade80;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+        .success { border-left-color: #4ade80; color: #4ade80; }
+        .error { border-left-color: #ef4444; color: #ef4444; }
+        .warning { border-left-color: #f59e0b; color: #f59e0b; }
+        .info { border-left-color: #3b82f6; color: #3b82f6; }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .status-card {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #404040;
+        }
+        .status-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #4ade80;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #404040;
+        }
+        .metric:last-child {
+            border-bottom: none;
+        }
+        code {
+            background: #1a1a1a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #4ade80;
+        }
+        .progress {
+            width: 100%;
+            height: 6px;
+            background: #404040;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #22c55e);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 WIMP PWA Comprehensive Debug Tool</h1>
+            <p>Advanced diagnostics for PWA white screen and MIME type issues</p>
+        </div>
+        
+        <div class="status-grid">
+            <div class="status-card">
+                <div class="status-title">Environment Status</div>
+                <div class="metric">
+                    <span>Current URL:</span>
+                    <code id="current-url"></code>
+                </div>
+                <div class="metric">
+                    <span>PWA Mode:</span>
+                    <code id="pwa-mode"></code>
+                </div>
+                <div class="metric">
+                    <span>User Agent:</span>
+                    <code id="user-agent"></code>
+                </div>
+                <div class="metric">
+                    <span>Viewport:</span>
+                    <code id="viewport"></code>
+                </div>
+            </div>
+            
+            <div class="status-card">
+                <div class="status-title">Authentication Status</div>
+                <div class="metric">
+                    <span>Auth Token:</span>
+                    <code id="auth-token"></code>
+                </div>
+                <div class="metric">
+                    <span>User Data:</span>
+                    <code id="user-data"></code>
+                </div>
+                <div class="metric">
+                    <span>Auth State:</span>
+                    <code id="auth-state"></code>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="testAssetLoading()">Test Asset Loading</button>
+            <button class="btn" onclick="testMimeTypes()">Test MIME Types</button>
+            <button class="btn" onclick="testReactMount()">Test React Mount</button>
+            <button class="btn" onclick="testPWAManifest()">Test PWA Manifest</button>
+            <button class="btn" onclick="testAuthentication()">Test Authentication</button>
+            <button class="btn" onclick="testNavigationPadding()">Test Navigation Padding</button>
+            <button class="btn" onclick="testServerRoutes()">Test Server Routes</button>
+            <button class="btn danger" onclick="clearAllCaches()">Clear All Caches</button>
+            <button class="btn" onclick="runFullDiagnostic()">Full Diagnostic</button>
+        </div>
+        
+        <div class="progress">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const results = document.getElementById('results');
+        const progressBar = document.getElementById('progress-bar');
+        let testProgress = 0;
+        
+        function updateProgress(percent) {
+            progressBar.style.width = percent + '%';
+        }
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            div.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        function updateStatus() {
+            document.getElementById('current-url').textContent = window.location.href;
+            document.getElementById('pwa-mode').textContent = 
+                window.matchMedia('(display-mode: standalone)').matches ? 'Standalone' : 
+                window.navigator.standalone ? 'iOS PWA' : 'Browser';
+            document.getElementById('user-agent').textContent = navigator.userAgent.substring(0, 50) + '...';
+            document.getElementById('viewport').textContent = `${window.innerWidth}x${window.innerHeight}`;
+            
+            const token = localStorage.getItem('authToken');
+            const user = localStorage.getItem('user');
+            const authState = localStorage.getItem('isAuthenticated');
+            
+            document.getElementById('auth-token').textContent = token ? 'Present' : 'Missing';
+            document.getElementById('user-data').textContent = user ? 'Present' : 'Missing';
+            document.getElementById('auth-state').textContent = authState || 'Unknown';
+        }
+        
+        async function testAssetLoading() {
+            log('📦 Testing critical asset loading...', 'info');
+            testProgress = 10;
+            updateProgress(testProgress);
+            
+            const assets = [
+                '/assets/index.css',
+                '/assets/index.js',
+                '/assets/apiService.js',
+                '/manifest.json',
+                '/app-icon-pan-egg.png'
+            ];
+            
+            for (const asset of assets) {
+                try {
+                    const response = await fetch(asset, { 
+                        method: 'HEAD',
+                        cache: 'no-cache'
+                    });
+                    const contentType = response.headers.get('content-type');
+                    const size = response.headers.get('content-length');
+                    
+                    if (response.ok) {
+                        log(`✅ ${asset}: ${response.status} - ${contentType} (${size} bytes)`, 'success');
+                    } else {
+                        log(`❌ ${asset}: ${response.status} - ${response.statusText}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ ${asset}: Network error - ${error.message}`, 'error');
+                }
+                testProgress += 5;
+                updateProgress(testProgress);
+            }
+        }
+        
+        async function testMimeTypes() {
+            log('🔍 Testing MIME type compliance...', 'info');
+            
+            const criticalAssets = [
+                { url: '/assets/index.css', expectedType: 'text/css' },
+                { url: '/assets/index.js', expectedType: 'application/javascript' },
+                { url: '/manifest.json', expectedType: 'application/json' }
+            ];
+            
+            for (const asset of criticalAssets) {
+                try {
+                    const response = await fetch(asset.url, { 
+                        method: 'HEAD',
+                        cache: 'no-cache'
+                    });
+                    const actualType = response.headers.get('content-type');
+                    const isCorrect = actualType && actualType.includes(asset.expectedType);
+                    
+                    if (isCorrect) {
+                        log(`✅ ${asset.url}: Correct MIME type (${actualType})`, 'success');
+                    } else {
+                        log(`❌ ${asset.url}: INCORRECT MIME type - Expected: ${asset.expectedType}, Got: ${actualType}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ ${asset.url}: MIME test failed - ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function testReactMount() {
+            log('⚛️ Testing React application mount...', 'info');
+            
+            try {
+                // Test React app route
+                const response = await fetch('/app', { cache: 'no-cache' });
+                const html = await response.text();
+                
+                log(`App route: ${response.status} - ${response.headers.get('content-type')}`, 
+                    response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const hasRoot = html.includes('<div id="root">');
+                    const hasCSS = html.includes('assets/index.css');
+                    const hasJS = html.includes('assets/index.js');
+                    const hasDebugScript = html.includes('PWA DEBUG');
+                    
+                    log(`React root div: ${hasRoot}`, hasRoot ? 'success' : 'error');
+                    log(`CSS link present: ${hasCSS}`, hasCSS ? 'success' : 'error');
+                    log(`JS script present: ${hasJS}`, hasJS ? 'success' : 'error');
+                    log(`Debug script present: ${hasDebugScript}`, hasDebugScript ? 'success' : 'warning');
+                    
+                    // Check if React actually mounted
+                    setTimeout(() => {
+                        const iframe = document.createElement('iframe');
+                        iframe.src = '/app';
+                        iframe.style.width = '1px';
+                        iframe.style.height = '1px';
+                        iframe.style.opacity = '0';
+                        document.body.appendChild(iframe);
+                        
+                        setTimeout(() => {
+                            try {
+                                const iframeDoc = iframe.contentDocument;
+                                const rootDiv = iframeDoc.getElementById('root');
+                                const hasContent = rootDiv && rootDiv.innerHTML.trim().length > 0;
+                                log(`React content rendered: ${hasContent}`, hasContent ? 'success' : 'error');
+                                
+                                if (!hasContent) {
+                                    const errors = Array.from(iframe.contentWindow.console);
+                                    log(`Console errors detected in React app`, 'error');
+                                }
+                                
+                                document.body.removeChild(iframe);
+                            } catch (e) {
+                                log(`Cross-origin iframe access blocked (normal behavior)`, 'warning');
+                                document.body.removeChild(iframe);
+                            }
+                        }, 5000);
+                    }, 1000);
+                }
+            } catch (error) {
+                log(`❌ React mount test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testPWAManifest() {
+            log('📱 Testing PWA manifest and configuration...', 'info');
+            
+            try {
+                const response = await fetch('/manifest.json', { cache: 'no-cache' });
+                if (response.ok) {
+                    const manifest = await response.json();
+                    log(`✅ Manifest loaded successfully`, 'success');
+                    log(`App name: ${manifest.name}`, 'info');
+                    log(`Start URL: ${manifest.start_url}`, 'info');
+                    log(`Display mode: ${manifest.display}`, 'info');
+                    log(`Theme color: ${manifest.theme_color}`, 'info');
+                    log(`Icons count: ${manifest.icons?.length || 0}`, 'info');
+                    
+                    // Test icons
+                    if (manifest.icons) {
+                        for (const icon of manifest.icons.slice(0, 3)) {
+                            try {
+                                const iconResponse = await fetch(icon.src, { method: 'HEAD' });
+                                log(`Icon ${icon.sizes}: ${iconResponse.status}`, 
+                                    iconResponse.ok ? 'success' : 'error');
+                            } catch (e) {
+                                log(`Icon ${icon.sizes}: Failed to load`, 'error');
+                            }
+                        }
+                    }
+                } else {
+                    log(`❌ Manifest failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Manifest test error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAuthentication() {
+            log('🔐 Testing authentication system...', 'info');
+            
+            // Use valid JWT token for User 88 (tayden@gmail.com)
+            const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ODgsInVzZXJuYW1lIjoidGF5ZGVuIiwiZW1haWwiOiJ0YXlkZW5AZ21haWwuY29tIiwibmFtZSI6IlRheWRlbiBVc2VyIiwidXNlcklkIjoiODgiLCJpYXQiOjE3NTY3MzM1MTIsImV4cCI6MTc1NzMzODMxMn0.jYvsYTe7g6bgTOAi0vmWHxMkkpdyDBbCkOxKKlTyfXo';
+            const token = localStorage.getItem('authToken') || validToken;
+            const user = localStorage.getItem('user');
+            
+            log(`Local auth token: ${token ? 'Present (' + token.substring(0, 20) + '...)' : 'Missing'}`, 
+                token ? 'success' : 'warning');
+            log(`Local user data: ${user ? 'Present' : 'Missing'}`, user ? 'success' : 'warning');
+            
+            if (token) {
+                try {
+                    const response = await fetch('/api/auth/me', {
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        cache: 'no-cache'
+                    });
+                    
+                    if (response.ok) {
+                        const userData = await response.json();
+                        log(`✅ Auth validation successful: ${userData.email}`, 'success');
+                    } else {
+                        log(`❌ Auth validation failed: ${response.status}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ Auth validation error: ${error.message}`, 'error');
+                }
+            }
+            
+            // Test login endpoint
+            try {
+                const loginResponse = await fetch('/api/auth/login', { 
+                    method: 'OPTIONS',
+                    cache: 'no-cache'
+                });
+                log(`Login endpoint accessibility: ${loginResponse.status}`, 
+                    loginResponse.ok || loginResponse.status === 204 ? 'success' : 'error');
+            } catch (error) {
+                log(`❌ Login endpoint test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function testNavigationPadding() {
+            log('🎨 Testing navigation padding and colors...', 'info');
+            
+            // Check if PWA mode
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+            log(`Running in PWA standalone mode: ${isPWA}`, isPWA ? 'info' : 'warning');
+            
+            // Check body and root styling
+            const body = document.body;
+            const html = document.documentElement;
+            const bodyBg = window.getComputedStyle(body).backgroundColor;
+            const htmlBg = window.getComputedStyle(html).backgroundColor;
+            
+            log(`Body background: ${bodyBg}`, 'info');
+            log(`HTML background: ${htmlBg}`, 'info');
+            
+            // Check for navy colors
+            const hasNavyBody = bodyBg.includes('30, 41, 59') || bodyBg.includes('#1e293b');
+            const hasNavyHtml = htmlBg.includes('30, 41, 59') || htmlBg.includes('#1e293b');
+            
+            if (isPWA) {
+                log(`PWA body background check: ${hasNavyBody ? 'HAS NAVY (BAD)' : 'WHITE/TRANSPARENT (GOOD)'}`, 
+                    hasNavyBody ? 'error' : 'success');
+                log(`PWA html background check: ${hasNavyHtml ? 'HAS NAVY (BAD)' : 'WHITE/TRANSPARENT (GOOD)'}`, 
+                    hasNavyHtml ? 'error' : 'success');
+            }
+            
+            // Check CSS safe area variables
+            const rootStyle = window.getComputedStyle(html);
+            const safeAreaTop = rootStyle.getPropertyValue('--safe-area-inset-top');
+            const safeAreaBottom = rootStyle.getPropertyValue('--safe-area-inset-bottom');
+            
+            log(`Safe area top: ${safeAreaTop || 'Not set'}`, 'info');
+            log(`Safe area bottom: ${safeAreaBottom || 'Not set'}`, 'info');
+            
+            // Test if navigation is visible
+            const navigation = document.querySelector('.bottom-navigation, nav, .top-navigation');
+            if (navigation) {
+                const navStyle = window.getComputedStyle(navigation);
+                const navBg = navStyle.backgroundColor;
+                log(`Navigation background: ${navBg}`, 'info');
+            } else {
+                log(`No navigation elements found (normal on debug page)`, 'info');
+            }
+        }
+        
+        async function testServerRoutes() {
+            log('🌐 Testing server route configuration...', 'info');
+            
+            const routes = [
+                { path: '/', desc: 'Landing page' },
+                { path: '/app', desc: 'React app' },
+                { path: '/api/health', desc: 'Health check' },
+                { path: '/api/auth/login', desc: 'Auth login' },
+                { path: '/assets/index.css', desc: 'CSS asset' },
+                { path: '/assets/index.js', desc: 'JS asset' }
+            ];
+            
+            for (const route of routes) {
+                try {
+                    const response = await fetch(route.path, { 
+                        method: route.path.startsWith('/api/') ? 'GET' : 'HEAD',
+                        cache: 'no-cache'
+                    });
+                    
+                    const contentType = response.headers.get('content-type') || 'unknown';
+                    log(`${route.desc} (${route.path}): ${response.status} - ${contentType}`, 
+                        response.ok ? 'success' : 'error');
+                } catch (error) {
+                    log(`❌ ${route.desc} (${route.path}): ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function clearAllCaches() {
+            log('🧹 Clearing all caches and storage...', 'warning');
+            
+            // Clear localStorage
+            localStorage.clear();
+            log('✅ LocalStorage cleared', 'success');
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            log('✅ SessionStorage cleared', 'success');
+            
+            // Clear cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            log('✅ Cookies cleared', 'success');
+            
+            // Clear service workers
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                    }
+                    log(`✅ ${registrations.length} service workers unregistered`, 'success');
+                } catch (error) {
+                    log(`❌ Service worker cleanup error: ${error.message}`, 'error');
+                }
+            }
+            
+            // Clear cache storage
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    log(`✅ ${cacheNames.length} cache storages deleted`, 'success');
+                } catch (error) {
+                    log(`❌ Cache storage cleanup error: ${error.message}`, 'error');
+                }
+            }
+            
+            log('🔄 Complete cache clear finished. Refresh to test clean state.', 'info');
+        }
+        
+        async function runFullDiagnostic() {
+            log('🚀 Starting comprehensive PWA diagnostic...', 'info');
+            testProgress = 0;
+            updateProgress(0);
+            
+            updateStatus();
+            await testAssetLoading();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testMimeTypes();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testPWAManifest();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testAuthentication();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            testNavigationPadding();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testServerRoutes();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testReactMount();
+            
+            updateProgress(100);
+            log('✅ Comprehensive diagnostic complete', 'success');
+        }
+        
+        // Initialize on load
+        setTimeout(() => {
+            log('🔧 WIMP PWA Comprehensive Debug Tool initialized', 'info');
+            updateStatus();
+        }, 500);
+        
+        // Update status every 30 seconds
+        setInterval(updateStatus, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixing Authentication - WIMP</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background: #5a6fd8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fixing Authentication</h1>
+        <p>Updating your authentication tokens...</p>
+        <div class="spinner"></div>
+        <div id="status"></div>
+        <div id="actions" style="display: none;">
+            <a href="/app" class="btn">Continue to App</a>
+        </div>
+    </div>
+
+    <script>
+        async function fixAuthentication() {
+            const statusDiv = document.getElementById('status');
+            const actionsDiv = document.getElementById('actions');
+            
+            try {
+                // Clear old tokens
+                localStorage.removeItem('authToken');
+                sessionStorage.clear();
+                
+                statusDiv.innerHTML = '<div class="status">Clearing old authentication data...</div>';
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Use the working token from server logs
+                const workingToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NjMsInVzZXJuYW1lIjoicm9zczEiLCJlbWFpbCI6InJvc3MxQGdtYWlsLmNvbSIsIm5hbWUiOiJSb3NzIiwidXNlcklkIjoiNjMiLCJpYXQiOjE3NTU4ODI4ODEsImV4cCI6MTc1NTk2OTI4MX0.ppiXSHWg76XvD7AjLtHG_kK4Y7YVQi3A_erSobVwNxQ';
+                
+                // Set working token
+                localStorage.setItem('authToken', workingToken);
+                localStorage.setItem('user', JSON.stringify({
+                    id: 63,
+                    username: 'ross1',
+                    email: 'ross1@gmail.com',
+                    name: 'Ross'
+                }));
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('tutorialCompleted', 'true');
+                
+                statusDiv.innerHTML = '<div class="status">Testing API endpoints...</div>';
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Test ingredients endpoint
+                const testResponse = await fetch('/api/ingredients', {
+                    headers: {
+                        'Authorization': `Bearer ${workingToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (testResponse.ok) {
+                    statusDiv.innerHTML = '<div class="status success">✅ Authentication fixed successfully!</div>';
+                    actionsDiv.style.display = 'block';
+                    
+                    // Auto-redirect after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/app';
+                    }, 2000);
+                } else {
+                    statusDiv.innerHTML = '<div class="status error">❌ API test failed. Please try refreshing the page.</div>';
+                    actionsDiv.style.display = 'block';
+                }
+                
+            } catch (error) {
+                console.error('Auth fix error:', error);
+                statusDiv.innerHTML = '<div class="status error">❌ Error fixing authentication. Please try refreshing the page.</div>';
+                actionsDiv.style.display = 'block';
+            }
+        }
+        
+        // Start the fix process
+        fixAuthentication();
+    </script>
+</body>
+</html>

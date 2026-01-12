@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIMP - Freemium Test Mode</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f3f4f6;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #d97706;
+        }
+        .premium {
+            background: #10b981;
+        }
+        .premium:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 WIMP Subscription Test Mode</h1>
+        <p>Use these controls to test both freemium and premium experiences:</p>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="enableFreemium()">🔒 Enable Freemium Mode</button>
+            <button onclick="enablePremium()" class="premium">🏆 Enable Premium Mode</button>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <button onclick="goToApp()">🚀 Go to App</button>
+        </div>
+        
+        <div id="status" style="margin-top: 20px; padding: 10px; background: #f3f4f6; border-radius: 6px;">
+            Current Mode: <span id="currentMode">Loading...</span>
+        </div>
+    </div>
+
+    <script>
+        function enableFreemium() {
+            localStorage.setItem('TEST_FREEMIUM_MODE', 'true');
+            updateStatus();
+            alert('🔒 Freemium mode enabled! Premium features will be locked.');
+        }
+        
+        function enablePremium() {
+            localStorage.removeItem('TEST_FREEMIUM_MODE');
+            updateStatus();
+            alert('🏆 Premium mode enabled! All features unlocked.');
+        }
+        
+        function goToApp() {
+            window.location.href = '/app';
+        }
+        
+        function updateStatus() {
+            const isFreemium = localStorage.getItem('TEST_FREEMIUM_MODE') === 'true';
+            const statusEl = document.getElementById('currentMode');
+            statusEl.textContent = isFreemium ? '🔒 Freemium (Premium features locked)' : '🏆 Premium (All features unlocked)';
+            statusEl.style.color = isFreemium ? '#dc2626' : '#059669';
+        }
+        
+        // Update status on load
+        updateStatus();
+    </script>
+</body>
+</html>

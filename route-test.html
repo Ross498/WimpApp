@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Route Test - SUCCESS!</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0f0f0f;
+            color: #00ff00;
+            padding: 20px;
+            text-align: center;
+        }
+        .success {
+            font-size: 24px;
+            color: #00ff00;
+            background: #001100;
+            padding: 20px;
+            border: 2px solid #00ff00;
+            margin: 20px;
+        }
+        .debug {
+            background: #220000;
+            color: #ff6666;
+            padding: 15px;
+            margin: 10px;
+            border: 1px solid #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="success">
+        ✅ SUCCESS: HTML Route Working!
+        <br><strong>This confirms HTML routes work in Replit preview!</strong>
+    </div>
+    
+    <h2>🔧 Route Test Results</h2>
+    <div class="debug">
+        <strong>Route:</strong> /route-test.html<br>
+        <strong>Time:</strong> <span id="timestamp"></span><br>
+        <strong>URL:</strong> <span id="current-url"></span><br>
+        <strong>Status:</strong> HTML file served successfully from public/ directory<br>
+        <strong>Host:</strong> <span id="host-info"></span><br>
+        <strong>User Agent:</strong> <span id="user-agent"></span>
+    </div>
+    
+    <div class="debug">
+        <h3>🔍 Debugging Info:</h3>
+        <strong>If you can see this page, HTML routes work!</strong><br>
+        The issue might be:<br>
+        • Browser cache preventing updates<br>
+        • Different URL being accessed<br>
+        • Typo in the route path<br>
+        • Preview iframe not refreshing
+    </div>
+    
+    <div class="debug">
+        <h3>Available Debug Tools:</h3>
+        <a href="/clear-cache-and-test.html" target="_blank" style="color: #66ff66;">Clear Cache & Test</a><br>
+        <a href="/production-mime-debug.html" target="_blank" style="color: #66ff66;">Production MIME Debug</a><br>
+        <a href="/comprehensive-pwa-debug.html" target="_blank" style="color: #66ff66;">Comprehensive PWA Debug</a><br>
+        <strong style="color: #ffff66;">Financial Debug Tools:</strong><br>
+        <a href="/financial-api-direct-test.html" target="_blank" style="color: #ff0000; font-weight: bold;">⚡ Financial API Direct Test (FIXES 401 ERRORS)</a><br>
+        <a href="/jwt-token-display.html" target="_blank" style="color: #00ff00; font-weight: bold;">🔐 JWT Token Display (COPY TOKEN HERE)</a><br>
+        <a href="/external-debug-links.html" target="_blank" style="color: #ffaa00; font-weight: bold;">🔗 External Debug Links (RECOMMENDED)</a><br>
+        <a href="/financial-route-test.html" target="_blank" style="color: #66ccff;">🧪 Financial Route Test</a><br>
+        <a href="/comprehensive-financial-frontend-test.html" target="_blank" style="color: #ff6666;">🎯 Comprehensive Financial Frontend Test</a><br>
+        <a href="/financial-debug-comprehensive.html" target="_blank" style="color: #ff6666;">🔧 Financial Debug Comprehensive</a><br>
+    </div>
+    
+    <script>
+        document.getElementById('timestamp').textContent = new Date().toISOString();
+        document.getElementById('current-url').textContent = window.location.href;
+        document.getElementById('host-info').textContent = window.location.host;
+        document.getElementById('user-agent').textContent = navigator.userAgent.substring(0, 100) + '...';
+        
+        // Test if we can access other debug tools
+        console.log('🔧 Route Test: HTML file loaded successfully');
+        console.log('🌐 Current URL:', window.location.href);
+        console.log('🎯 Route Test: If you see this, HTML routes are working');
+        console.log('📍 Host:', window.location.host);
+        console.log('👤 User Agent:', navigator.userAgent);
+        
+        // Try to access other routes programmatically
+        setTimeout(() => {
+            console.log('🧪 Testing other route access...');
+            fetch('/clear-cache-and-test.html')
+                .then(response => {
+                    console.log('✅ /clear-cache-and-test.html accessible:', response.ok);
+                    return response.text();
+                })
+                .then(html => {
+                    if (html.includes('Clear Cache')) {
+                        console.log('✅ /clear-cache-and-test.html content verified');
+                    } else {
+                        console.log('❌ /clear-cache-and-test.html unexpected content');
+                    }
+                })
+                .catch(error => {
+                    console.log('❌ /clear-cache-and-test.html error:', error);
+                });
+        }, 1000);
+    </script>
+</body>
+</html>

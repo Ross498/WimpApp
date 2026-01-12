@@ -1,0 +1,1 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Force Refresh</title></head><body><script>localStorage.clear();sessionStorage.clear();if("caches"in window){caches.keys().then(names=>Promise.all(names.map(name=>caches.delete(name))))}setTimeout(()=>window.location.href="/app?_="+Date.now(),1000)</script><h1>Clearing cache and refreshing...</h1></body></html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingredients Display Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .ingredient { border: 1px solid #ccc; margin: 10px 0; padding: 10px; }
+        .debug { background: #f0f8ff; padding: 10px; margin: 10px 0; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>WIMP Ingredients Display Debug</h1>
+    
+    <div class="debug">
+        <h3>Backend API Test</h3>
+        <button onclick="testAPI()">Test API Response</button>
+        <button onclick="addTestIngredient()">Add Test Ingredient</button>
+        <button onclick="clearAll()">Clear All</button>
+        <div id="api-result"></div>
+    </div>
+
+    <div class="debug">
+        <h3>Current Ingredients</h3>
+        <div id="ingredients-list"></div>
+    </div>
+
+    <script>
+        // Authenticate first
+        async function authenticate() {
+            const response = await fetch('/api/auth/demo-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({})
+            });
+            const data = await response.json();
+            if (data.token) {
+                localStorage.setItem('authToken', data.token);
+            }
+            return data;
+        }
+
+        async function testAPI() {
+            await authenticate();
+            const token = localStorage.getItem('authToken');
+            
+            const response = await fetch('/api/ingredients', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            document.getElementById('api-result').innerHTML = `
+                <h4>API Response Status: ${response.status}</h4>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            
+            displayIngredients(data.ingredients || []);
+        }
+
+        function displayIngredients(ingredients) {
+            const container = document.getElementById('ingredients-list');
+            if (!ingredients || ingredients.length === 0) {
+                container.innerHTML = '<p>No ingredients found</p>';
+                return;
+            }
+            
+            container.innerHTML = ingredients.map(ingredient => `
+                <div class="ingredient">
+                    <div style="display: flex; align-items: center;">
+                        <span style="font-size: 2em; margin-right: 10px;">${ingredient.emoji || '🥄'}</span>
+                        <div>
+                            <div><strong>Name:</strong> ${ingredient.name || 'NO NAME'}</div>
+                            <div><strong>Quantity:</strong> ${ingredient.quantity || 0} ${ingredient.unit || 'units'}</div>
+                            <div><strong>Category:</strong> ${ingredient.category || 'Other'}</div>
+                            <div><strong>ID:</strong> ${ingredient.id}</div>
+                        </div>
+                        <button onclick="deleteIngredient(${ingredient.id})" style="margin-left: auto;">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addTestIngredient() {
+            await authenticate();
+            const token = localStorage.getItem('authToken');
+            
+            const response = await fetch('/api/ingredients', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    name: 'Debug Test Apple',
+                    quantity: 7,
+                    unit: 'pieces',
+                    category: 'Fruits',
+                    emoji: '🍎'
+                })
+            });
+            
+            const data = await response.json();
+            console.log('Add result:', data);
+            testAPI(); // Refresh display
+        }
+
+        async function deleteIngredient(id) {
+            await authenticate();
+            const token = localStorage.getItem('authToken');
+            
+            const response = await fetch(`/api/ingredients/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            console.log('Delete result:', data);
+            testAPI(); // Refresh display
+        }
+
+        async function clearAll() {
+            await authenticate();
+            const token = localStorage.getItem('authToken');
+            
+            const response = await fetch('/api/ingredients', {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            console.log('Clear all result:', data);
+            testAPI(); // Refresh display
+        }
+
+        // Auto-test on page load
+        window.onload = () => {
+            testAPI();
+        };
+    </script>
+</body>
+</html>

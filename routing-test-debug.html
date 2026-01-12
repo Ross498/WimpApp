@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Routing Debug Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f0f0f0; }
+        .test { margin: 10px 0; padding: 10px; background: white; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .loading { background: #fff3cd; color: #856404; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; max-height: 200px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Root Route Debug Test</h1>
+    <button onclick="runDetailedTest()">Run Detailed Root Route Test</button>
+    <div id="results"></div>
+
+    <script>
+        async function runDetailedTest() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="test loading">Running detailed test...</div>';
+            
+            try {
+                console.log('🔍 Starting detailed root route test');
+                
+                // Test with explicit cache bypass
+                const testUrl = '/?_t=' + Date.now();
+                const response = await fetch(testUrl, {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                const html = await response.text();
+                console.log('Response length:', html.length);
+                console.log('First 500 chars:', html.substring(0, 500));
+                
+                // Test conditions individually
+                const hasReactRoot = html.includes('<div id="root">');
+                const hasReactBundle = html.includes('/assets/index.js');
+                const hasTitle = html.includes('WIMP Kitchen Companion');
+                
+                console.log('Test results:', { hasReactRoot, hasReactBundle, hasTitle });
+                
+                // Find exact matches
+                const rootMatch = html.match(/<div id="root"[^>]*>/);
+                const bundleMatch = html.match(/\/assets\/index\.js/);
+                const titleMatch = html.match(/WIMP Kitchen Companion/);
+                
+                let resultHtml = `
+                    <div class="test ${response.status === 200 ? 'success' : 'error'}">
+                        <strong>HTTP Status:</strong> ${response.status}
+                    </div>
+                    <div class="test ${hasReactRoot ? 'success' : 'error'}">
+                        <strong>React Root Div:</strong> ${hasReactRoot ? '✅ FOUND' : '❌ NOT FOUND'}
+                        ${rootMatch ? '<br>Match: ' + rootMatch[0] : ''}
+                    </div>
+                    <div class="test ${hasReactBundle ? 'success' : 'error'}">
+                        <strong>React Bundle:</strong> ${hasReactBundle ? '✅ FOUND' : '❌ NOT FOUND'}
+                        ${bundleMatch ? '<br>Match: ' + bundleMatch[0] : ''}
+                    </div>
+                    <div class="test ${hasTitle ? 'success' : 'error'}">
+                        <strong>Page Title:</strong> ${hasTitle ? '✅ FOUND' : '❌ NOT FOUND'}
+                        ${titleMatch ? '<br>Match: ' + titleMatch[0] : ''}
+                    </div>
+                    <div class="test ${hasReactRoot && hasReactBundle && hasTitle ? 'success' : 'error'}">
+                        <strong>Overall Result:</strong> ${hasReactRoot && hasReactBundle && hasTitle ? '✅ ALL TESTS PASS' : '❌ SOME TESTS FAILED'}
+                    </div>
+                    <div class="test">
+                        <strong>Response Preview:</strong>
+                        <pre>${html.substring(0, 800)}${html.length > 800 ? '\n...(truncated)' : ''}</pre>
+                    </div>
+                `;
+                
+                results.innerHTML = resultHtml;
+                
+            } catch (error) {
+                console.error('Test error:', error);
+                results.innerHTML = `<div class="test error">❌ Test failed: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-run test on load
+        window.onload = () => {
+            setTimeout(runDetailedTest, 100);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Asset & PWA Debug Tool</title>
+    <style>
+        body {
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #f0f0f0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 8px;
+        }
+        .btn {
+            background: #4ade80;
+            color: #0a0a0a;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 5px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .result {
+            background: #262626;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .warning { color: #fbbf24; }
+        .info { color: #60a5fa; }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 4px;
+        }
+        .url-test {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            align-items: center;
+        }
+        .url-input {
+            flex: 1;
+            padding: 8px;
+            background: #333;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 4px;
+        }
+        pre {
+            background: #111;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Comprehensive Asset & PWA Debug Tool</h1>
+        <p><strong>Current Domain:</strong> <span id="currentDomain"></span></p>
+        <p><strong>User Agent:</strong> <span id="userAgent"></span></p>
+        
+        <div class="section">
+            <h3>🎯 Quick Tests</h3>
+            <button class="btn" onclick="testCriticalAssets()">Test Critical Assets</button>
+            <button class="btn" onclick="testDomainComparison()">Compare Domains</button>
+            <button class="btn" onclick="testPWAMode()">Test PWA Detection</button>
+            <button class="btn" onclick="testAppRoute()">Test /app Route</button>
+            <button class="btn" onclick="clearAllCaches()">Clear All Caches</button>
+            <button class="btn" onclick="runFullDiagnostic()">Full Diagnostic</button>
+        </div>
+        
+        <div class="section">
+            <h3>🌐 Custom URL Testing</h3>
+            <div class="url-test">
+                <input type="text" class="url-input" id="customUrl" placeholder="Enter full URL to test (e.g. https://wimpapp.co.za/assets/index.css)">
+                <button class="btn" onclick="testCustomUrl()">Test URL</button>
+            </div>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const results = document.getElementById('results');
+        document.getElementById('currentDomain').textContent = window.location.origin;
+        document.getElementById('userAgent').textContent = navigator.userAgent.substring(0, 100) + '...';
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        async function testCriticalAssets() {
+            log('🔍 Testing critical assets on current domain...', 'info');
+            
+            const assets = [
+                '/assets/index.css',
+                '/assets/index.js',
+                '/assets/apiService.js',
+                '/manifest.json',
+                '/app-icon-pan-egg.png'
+            ];
+            
+            for (const asset of assets) {
+                try {
+                    const response = await fetch(asset);
+                    const contentType = response.headers.get('content-type');
+                    const size = response.headers.get('content-length');
+                    const cacheControl = response.headers.get('cache-control');
+                    
+                    if (response.ok) {
+                        log(`✅ ${asset}: ${response.status} - ${contentType} (${size} bytes)`, 'success');
+                        log(`   Cache-Control: ${cacheControl}`, 'info');
+                        
+                        // Check if CSS/JS content is actually correct
+                        if (asset.endsWith('.css') || asset.endsWith('.js')) {
+                            const content = await response.text();
+                            const isActualContent = !content.includes('<!doctype html>');
+                            log(`   Content check: ${isActualContent ? 'Actual asset' : 'HTML returned!'}`, isActualContent ? 'success' : 'error');
+                            if (!isActualContent) {
+                                log(`   First 200 chars: ${content.substring(0, 200)}...`, 'error');
+                            }
+                        }
+                    } else {
+                        log(`❌ ${asset}: ${response.status} - ${response.statusText}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ ${asset}: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function testDomainComparison() {
+            log('🌐 Testing assets across domains...', 'info');
+            
+            const domains = [
+                window.location.origin, // Current domain
+                'https://wimpapp.co.za',
+                'http://localhost:5000'
+            ];
+            
+            const testAsset = '/assets/index.css';
+            
+            for (const domain of domains) {
+                try {
+                    log(`Testing ${domain}${testAsset}...`, 'info');
+                    const response = await fetch(domain + testAsset);
+                    const contentType = response.headers.get('content-type');
+                    
+                    if (response.ok) {
+                        const content = await response.text();
+                        const isCSS = content.includes('@tailwind') || content.includes('tailwind');
+                        const isHTML = content.includes('<!doctype html>');
+                        
+                        log(`✅ ${domain}: ${response.status} - ${contentType}`, 'success');
+                        log(`   Content type: ${isCSS ? 'CSS' : isHTML ? 'HTML' : 'Unknown'}`, isCSS ? 'success' : 'error');
+                    } else {
+                        log(`❌ ${domain}: ${response.status}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ ${domain}: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function testCustomUrl() {
+            const url = document.getElementById('customUrl').value;
+            if (!url) {
+                log('❌ Please enter a URL to test', 'error');
+                return;
+            }
+            
+            log(`🔍 Testing custom URL: ${url}`, 'info');
+            
+            try {
+                const response = await fetch(url);
+                const contentType = response.headers.get('content-type');
+                const size = response.headers.get('content-length');
+                const allHeaders = {};
+                
+                // Get all headers
+                for (const [key, value] of response.headers) {
+                    allHeaders[key] = value;
+                }
+                
+                log(`Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                log(`Content-Type: ${contentType}`, 'info');
+                log(`Size: ${size} bytes`, 'info');
+                log(`All headers: <pre>${JSON.stringify(allHeaders, null, 2)}</pre>`, 'info');
+                
+                // Sample content
+                const content = await response.text();
+                log(`Content sample (first 300 chars): <pre>${content.substring(0, 300)}...</pre>`, 'info');
+                
+            } catch (error) {
+                log(`❌ Error testing URL: ${error.message}`, 'error');
+            }
+        }
+        
+        function testPWAMode() {
+            log('📱 Testing PWA mode detection...', 'info');
+            
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+            const isIOSPWA = window.navigator.standalone;
+            const isPWAParam = new URLSearchParams(window.location.search).get('pwa') === 'true';
+            const hasManifest = document.querySelector('link[rel="manifest"]');
+            
+            log(`Standalone mode: ${isStandalone}`, isStandalone ? 'success' : 'info');
+            log(`iOS PWA: ${isIOSPWA}`, isIOSPWA ? 'success' : 'info');
+            log(`PWA URL param: ${isPWAParam}`, isPWAParam ? 'success' : 'info');
+            log(`Manifest link: ${hasManifest ? 'Present' : 'Missing'}`, hasManifest ? 'success' : 'warning');
+            log(`Display mode: ${window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser'}`, 'info');
+        }
+        
+        async function testAppRoute() {
+            log('⚛️ Testing /app route...', 'info');
+            
+            try {
+                const response = await fetch('/app');
+                const html = await response.text();
+                const contentType = response.headers.get('content-type');
+                
+                log(`/app route: ${response.status} - ${contentType}`, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const hasRoot = html.includes('<div id="root">');
+                    const hasCSS = html.includes('assets/index.css');
+                    const hasJS = html.includes('assets/index.js');
+                    const hasDebugScript = html.includes('PWA DEBUG');
+                    
+                    log(`Has root div: ${hasRoot}`, hasRoot ? 'success' : 'error');
+                    log(`Links to CSS: ${hasCSS}`, hasCSS ? 'success' : 'error');
+                    log(`Links to JS: ${hasJS}`, hasJS ? 'success' : 'error');
+                    log(`Has PWA debug script: ${hasDebugScript}`, hasDebugScript ? 'success' : 'info');
+                }
+            } catch (error) {
+                log(`❌ /app route test error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearAllCaches() {
+            log('🧹 Clearing all caches...', 'info');
+            
+            localStorage.clear();
+            sessionStorage.clear();
+            log('✅ Storage cleared', 'success');
+            
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                    }
+                    log(`✅ ${registrations.length} service workers unregistered`, 'success');
+                } catch (error) {
+                    log(`❌ Service worker clear error: ${error.message}`, 'error');
+                }
+            }
+            
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    log(`✅ ${cacheNames.length} cache storages cleared`, 'success');
+                } catch (error) {
+                    log(`❌ Cache storage clear error: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function runFullDiagnostic() {
+            log('🚀 Running full diagnostic...', 'info');
+            await testPWAMode();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testCriticalAssets();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testDomainComparison();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testAppRoute();
+            log('✅ Full diagnostic complete', 'success');
+        }
+        
+        // Auto-run basic test
+        setTimeout(() => {
+            log('🔧 Comprehensive Asset Debug Tool loaded', 'info');
+            testCriticalAssets();
+        }, 500);
+    </script>
+</body>
+</html>

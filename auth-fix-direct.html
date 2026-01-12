@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Fix - Direct Access</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
+        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        button { padding: 15px 30px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+        button:hover { background: #1565c0; }
+        .status { background: #e3f2fd; padding: 15px; border-left: 4px solid #1976d2; margin: 15px 0; }
+        .log { font-family: monospace; padding: 8px; margin: 5px 0; border-radius: 3px; font-size: 13px; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        .error { background: #ffebee; color: #c62828; }
+        .warning { background: #fff3e0; color: #ef6c00; }
+        h1 { color: #1976d2; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Authentication Fix Tool</h1>
+        <p><strong>Success!</strong> The authentication testing tool is working. The server is accessible and responding correctly.</p>
+        
+        <div class="status" id="tokenStatus">
+            <strong>Current Token Status:</strong> <span id="status">Checking...</span>
+        </div>
+        
+        <div style="text-align: center;">
+            <button onclick="clearAndLogin()" style="background: #d32f2f;">Clear Expired Token & Login</button>
+            <button onclick="testAPIs()">Test All APIs</button>
+        </div>
+        
+        <div id="logs"></div>
+    </div>
+    
+    <script>
+    let logCount = 0;
+    
+    function log(msg, type = 'info') {
+        const div = document.createElement('div');
+        div.className = `log ${type}`;
+        div.textContent = `[${++logCount}] ${new Date().toLocaleTimeString()}: ${msg}`;
+        document.getElementById('logs').appendChild(div);
+        updateStatus();
+    }
+    
+    function updateStatus() {
+        const token = localStorage.getItem('authToken');
+        const statusEl = document.getElementById('status');
+        
+        if (!token) {
+            statusEl.innerHTML = 'No token found';
+            statusEl.style.color = 'red';
+            return;
+        }
+        
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const now = Math.floor(Date.now() / 1000);
+            const isExpired = now > payload.exp;
+            
+            statusEl.innerHTML = `${isExpired ? 'EXPIRED' : 'VALID'} token - Expires: ${new Date(payload.exp * 1000).toLocaleString()}`;
+            statusEl.style.color = isExpired ? 'red' : 'green';
+            
+            if (isExpired) {
+                log('Found expired token in browser storage!', 'warning');
+                log('This explains the "jwt expired" errors in server logs', 'warning');
+            }
+        } catch (e) {
+            statusEl.innerHTML = 'Invalid token format';
+            statusEl.style.color = 'orange';
+        }
+    }
+    
+    async function clearAndLogin() {
+        log('Starting authentication cleanup...', 'info');
+        
+        // Nuclear storage clear
+        localStorage.clear();
+        sessionStorage.clear();
+        log('Storage cleared', 'success');
+        
+        try {
+            log('Getting fresh authentication token...', 'info');
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: 'test@newwimp.app', password: 'password123' })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.token) {
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('isAuthenticated', 'true');
+                
+                log(`Fresh login successful for: ${data.user.email}`, 'success');
+                log('New 7-day token stored in localStorage', 'success');
+                updateStatus();
+            } else {
+                log('Login failed: ' + (data.message || 'Unknown error'), 'error');
+            }
+        } catch (error) {
+            log('Login error: ' + error.message, 'error');
+        }
+    }
+    
+    async function testAPIs() {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            log('No token found - run Clear & Login first', 'error');
+            return;
+        }
+        
+        log('Testing all problematic API endpoints...', 'info');
+        
+        const testAPIs = [
+            { name: 'Auth Me', url: '/api/auth/me' },
+            { name: 'Financial Overview', url: '/api/financial/overview' },
+            { name: 'Financial Budget', url: '/api/financial/budget' },
+            { name: 'Subscription Status', url: '/api/subscription/status' },
+            { name: 'Shopping List', url: '/api/shopping' },
+            { name: 'Ingredients', url: '/api/ingredients' },
+            { name: 'Meals Unified', url: '/api/meals/unified' },
+            { name: 'Profile', url: '/api/auth/profile' },
+            { name: 'Collections', url: '/api/collections' },
+            { name: 'Favorites', url: '/api/favorites' },
+            { name: 'Mastery Progress', url: '/api/mastery/progress' },
+            { name: 'AI Chef Chat', url: '/api/ai-chef/chat' }
+        ];
+        
+        let working = 0;
+        let failing = 0;
+        
+        for (const api of testAPIs) {
+            try {
+                const response = await fetch(api.url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    working++;
+                    log(`${api.name}: SUCCESS (${response.status})`, 'success');
+                } else {
+                    failing++;
+                    const errorText = await response.text();
+                    log(`${api.name}: FAILED (${response.status}) - ${errorText.substring(0, 100)}`, 'error');
+                }
+                
+            } catch (error) {
+                failing++;
+                log(`${api.name}: ERROR - ${error.message}`, 'error');
+            }
+        }
+        
+        log(`Test Summary: ${working} working, ${failing} failing`, working === testAPIs.length ? 'success' : 'warning');
+        
+        if (working === testAPIs.length) {
+            log('SUCCESS! All authentication issues are resolved!', 'success');
+        }
+        
+        // Test financial endpoints with detailed debugging
+        if (failing > 0) {
+            log('DEBUGGING FAILED ENDPOINTS...', 'info');
+            
+            for (const api of testAPIs) {
+                if (api.name.includes('Financial')) {
+                    try {
+                        log(`Detailed test for ${api.name}...`, 'info');
+                        const response = await fetch(api.url, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        
+                        const responseText = await response.text();
+                        log(`${api.name} RAW RESPONSE: ${responseText.substring(0, 200)}...`, response.ok ? 'success' : 'error');
+                        
+                        if (!response.ok) {
+                            try {
+                                const errorData = JSON.parse(responseText);
+                                log(`${api.name} ERROR DETAILS: ${errorData.error || errorData.message}`, 'error');
+                            } catch (e) {
+                                log(`${api.name} PARSE ERROR: ${responseText}`, 'error');
+                            }
+                        }
+                        
+                    } catch (error) {
+                        log(`${api.name} DETAILED ERROR: ${error.message}`, 'error');
+                    }
+                }
+            }
+        }
+    }
+    
+    // Initial status check
+    updateStatus();
+    
+    // Auto-check every 10 seconds
+    setInterval(updateStatus, 10000);
+    </script>
+</body>
+</html>

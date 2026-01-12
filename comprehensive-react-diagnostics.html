@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comprehensive React App Diagnostics</title>
+    <style>
+        body { 
+            font-family: monospace; 
+            padding: 20px; 
+            background: #f8f9fa;
+            line-height: 1.5;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            background: #f8f9fa;
+        }
+        .success { border-left-color: #28a745; background: #d4edda; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .warning { border-left-color: #ffc107; background: #fff3cd; }
+        .test-button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow: auto;
+            font-size: 12px;
+        }
+        #results {
+            min-height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Comprehensive React App Diagnostics</h1>
+        
+        <div class="section">
+            <h3>Quick Tests</h3>
+            <button class="test-button" onclick="testBundleLoad()">Test Bundle Loading</button>
+            <button class="test-button" onclick="testReactMount()">Test React Mounting</button>
+            <button class="test-button" onclick="testImportAliases()">Test Import Aliases</button>
+            <button class="test-button" onclick="testFullDiagnostic()">Run Full Diagnostic</button>
+            <button class="test-button" onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div id="results">
+            <div class="section">
+                <p>Click any test button above to begin diagnostics.</p>
+                <p><strong>What this tool does:</strong></p>
+                <ul>
+                    <li>Tests if the React JavaScript bundle loads and executes</li>
+                    <li>Checks if React can mount to the DOM</li>
+                    <li>Verifies import path resolution (@/ aliases)</li>
+                    <li>Identifies specific component or dependency failures</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const className = type === 'error' ? 'error' : (type === 'success' ? 'success' : (type === 'warning' ? 'warning' : ''));
+            results.innerHTML += `<div class="section ${className}"><strong>[${new Date().toLocaleTimeString()}]</strong> ${message}</div>`;
+            console.log(`[DIAGNOSTIC] ${message}`);
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        async function testBundleLoad() {
+            log('Testing JavaScript bundle loading...', 'info');
+            
+            try {
+                const response = await fetch('/assets/index.js');
+                log(`Bundle fetch status: ${response.status} (${response.ok ? 'OK' : 'FAILED'})`, response.ok ? 'success' : 'error');
+                
+                const content = await response.text();
+                log(`Bundle size: ${content.length} characters`, 'info');
+                
+                // Check for common patterns
+                const hasReact = content.includes('React') || content.includes('react');
+                const hasApp = content.includes('App') || content.includes('main');
+                const errorCount = (content.match(/Error\(/g) || []).length;
+                
+                log(`React code detected: ${hasReact ? 'YES' : 'NO'}`, hasReact ? 'success' : 'error');
+                log(`App code detected: ${hasApp ? 'YES' : 'NO'}`, hasApp ? 'success' : 'error');
+                log(`Error patterns found: ${errorCount}`, errorCount > 5 ? 'warning' : 'info');
+                
+            } catch (error) {
+                log(`Bundle loading failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testReactMount() {
+            log('Testing React mounting capability...', 'info');
+            
+            // Create a test div
+            const testDiv = document.createElement('div');
+            testDiv.id = 'react-test-root';
+            testDiv.style.display = 'none';
+            document.body.appendChild(testDiv);
+            
+            try {
+                // Try to load the main React script
+                const script = document.createElement('script');
+                script.type = 'module';
+                script.src = '/assets/index.js';
+                
+                const loadPromise = new Promise((resolve, reject) => {
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    setTimeout(reject, 10000); // 10 second timeout
+                });
+                
+                document.head.appendChild(script);
+                
+                try {
+                    await loadPromise;
+                    log('React bundle loaded successfully', 'success');
+                    
+                    // Wait and check if React mounted
+                    setTimeout(() => {
+                        const rootDiv = document.getElementById('root');
+                        if (rootDiv && rootDiv.innerHTML.length > 50) {
+                            log('React appears to have mounted successfully', 'success');
+                            log(`Root content preview: ${rootDiv.innerHTML.substring(0, 100)}...`, 'info');
+                        } else {
+                            log('React bundle loaded but did not mount to DOM', 'error');
+                            log(`Root innerHTML length: ${rootDiv ? rootDiv.innerHTML.length : 'ROOT NOT FOUND'}`, 'warning');
+                        }
+                    }, 3000);
+                    
+                } catch (error) {
+                    log(`React bundle failed to load: ${error}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`React mount test failed: ${error.message}`, 'error');
+            } finally {
+                // Clean up test div
+                if (testDiv.parentNode) {
+                    testDiv.parentNode.removeChild(testDiv);
+                }
+            }
+        }
+        
+        function testImportAliases() {
+            log('Testing import alias resolution...', 'info');
+            log('Note: This requires examining the built bundle for import errors', 'warning');
+            
+            fetch('/assets/index.js')
+                .then(response => response.text())
+                .then(content => {
+                    // Look for unresolved imports
+                    const importPatterns = [
+                        /import.*from ['"]@\//g,
+                        /require\(['"]@\//g,
+                        /Cannot resolve module/g,
+                        /Module not found/g
+                    ];
+                    
+                    importPatterns.forEach((pattern, index) => {
+                        const matches = content.match(pattern);
+                        if (matches) {
+                            log(`Import pattern ${index + 1} found ${matches.length} instances`, 'warning');
+                            log(`Sample: ${matches[0]}`, 'info');
+                        } else {
+                            log(`Import pattern ${index + 1}: Clean`, 'success');
+                        }
+                    });
+                    
+                    // Check for specific error messages
+                    if (content.includes('Cannot resolve')) {
+                        log('Found "Cannot resolve" errors in bundle', 'error');
+                    } else {
+                        log('No obvious import resolution errors found', 'success');
+                    }
+                })
+                .catch(error => {
+                    log(`Failed to analyze imports: ${error.message}`, 'error');
+                });
+        }
+        
+        async function testFullDiagnostic() {
+            log('🚀 Starting comprehensive diagnostic...', 'info');
+            clearResults();
+            
+            await testBundleLoad();
+            setTimeout(testImportAliases, 1000);
+            setTimeout(testReactMount, 2000);
+            
+            log('Full diagnostic completed. Check results above.', 'success');
+        }
+    </script>
+</body>
+</html>

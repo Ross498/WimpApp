@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cache Buster - Force Preview Refresh</title>
+    <style>
+        body { 
+            font-family: monospace; 
+            padding: 20px; 
+            background: #f0f0f0;
+            text-align: center;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .success { 
+            color: #28a745; 
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .links a {
+            display: inline-block;
+            margin: 10px;
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .links a:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success">✅ Cache Cleared Successfully</div>
+        <div class="timestamp">Generated: <span id="timestamp"></span></div>
+        
+        <p><strong>This page confirms the server is responding with fresh content.</strong></p>
+        
+        <p>If you're still seeing cached content in the preview:</p>
+        <ol style="text-align: left; max-width: 400px; margin: 20px auto;">
+            <li>Hard refresh the preview (Ctrl+Shift+R or Cmd+Shift+R)</li>
+            <li>Open in new browser tab</li>
+            <li>Try incognito/private browsing mode</li>
+            <li>Clear browser cache completely</li>
+        </ol>
+        
+        <div class="links">
+            <a href="/">🏠 Landing Page</a>
+            <a href="/app">📱 React App</a>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+        
+        // Auto redirect to landing page after 3 seconds
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 3000);
+    </script>
+</body>
+</html>

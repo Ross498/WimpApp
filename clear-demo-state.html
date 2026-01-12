@@ -1,0 +1,68 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Demo State - WIMP</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .status { padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 12px 24px; margin: 10px 5px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        .primary { background: #007bff; color: white; }
+        .danger { background: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🧹 Clear Demo State - WIMP</h1>
+    
+    <div class="status info">
+        <strong>Demo User Stuck Issue:</strong><br>
+        If you're seeing "Demo User" in the profile and no authentication screens, click the button below to force clear the demo state.
+    </div>
+    
+    <button class="danger" onclick="clearDemoState()">Clear Demo State & Force Real Auth</button>
+    <button class="primary" onclick="goToApp()">Go to App</button>
+    
+    <div id="status"></div>
+
+    <script>
+        function clearDemoState() {
+            const statusDiv = document.getElementById('status');
+            
+            try {
+                // Clear ALL localStorage items
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Clear specific items that might persist
+                ['user', 'authToken', 'isAuthenticated', 'tutorialCompleted', 'hasVisitedWIMP'].forEach(key => {
+                    localStorage.removeItem(key);
+                    sessionStorage.removeItem(key);
+                });
+                
+                statusDiv.innerHTML = `
+                    <div class="status success">
+                        ✅ Demo state cleared successfully!<br>
+                        ✅ Tutorial completion flag reset<br>
+                        ✅ All authentication data cleared<br>
+                        <strong>Next:</strong> Click "Go to App" to start fresh
+                    </div>
+                `;
+                
+                console.log('🧹 Demo state cleared - ready for fresh start');
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="status danger">
+                        ❌ Error clearing state: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function goToApp() {
+            window.location.href = '/app';
+        }
+    </script>
+</body>
+</html>
